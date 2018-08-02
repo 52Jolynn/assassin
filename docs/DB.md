@@ -62,7 +62,7 @@ create table if not exists team_of_club (
 	`join_time` datetime(3) null comment '加入时间',
 	`create_time` datetime(3) not null comment '创建时间',
 	primary key(`id`),
-	key ct(`club_id``, `team_id`)
+	key ct(`club_id`, `team_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='球队与俱乐部表';
 
 ## 优惠券表
@@ -79,7 +79,7 @@ create table if not exists coupon (
 	`create_time` datetime(3) not null comment '领取时间',
 	`status` varchar(4) not null comment '状态, N: 正常, E: 已过期, U: 已使用',
 	primary key(`id`),
-	key ct(`club_id``, `team_id`)
+	key ct(`club_id`, `team_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='优惠券表';
 
 ## 球员表
@@ -142,8 +142,8 @@ create table if not exists jersey_of_team (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='球衣与球队表';
 
 ## 比赛表
-drop table if exists match;
-create table if not exists match (
+drop table if exists game_of_match;
+create table if not exists game_of_match (
 	`id` int not null auto_increment comment 'ID',
 	`home_team_id` int not null comment '主场球队id',
 	`away_team_id` int not null comment '客场球队id',
@@ -244,7 +244,7 @@ create table if not exists accounting_of_team (
 	`create_time` datetime(3) not null comment '创建时间',
 	primary key(`id`),
 	key m(`match_id`),
-	key p(`player_id`)
+	key p(`team_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='球队账目表';
 
 ## 球员账目表
