@@ -106,12 +106,25 @@ create table if not exists player (
 	`reaction_val` numeric null comment '反应',
 	`create_time` datetime(3) not null comment '创建时间',
 	`status` varchar(4) not null comment '状态, N: 正常, E: 退出, D: 禁用',
+	`level` varchar(4) not null comment 'N: 普通队员(只能查看个人相关数据), S: 正式队员(可查看球队相关数据)', 
 	primary key(`id`),
 	key u(`username`),
 	key name(`name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='球员表';
 
 ## 球员数值评估表(自评+他评)
+drop table if exists player_evaluation;
+create table if not exists player_evaluation (
+	`id` int not null auto_increment comment 'ID',
+	`player_id` int not null comment '球员id',
+	`team_id` int not null comment '球队id',
+	`evaluate_player_id` int not null comment '作出评价的球员id',
+	`fit` numeric not null comment '当前数值吻合度, 0%-100%',
+	`create_time` datetime(3) not null comment '创建时间',
+	primary key(`id`),
+	key p(`player_id`),
+	key t(`team_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='球员数值评估表';
 
 ## 球员与球队表
 drop table if exists player_of_team;
@@ -173,7 +186,7 @@ create table if not exists enroll_of_match (
 	`player_id` int not null comment '球员id',
 	`temporaty_player` int not null default 0 comment '携带散兵数',
 	`create_time` datetime(3) not null comment '创建时间',
-	`status` varchar(4) not null comment '报名状态, F: 报名失败, S: 报名成功',
+	`status` varchar(4) not null comment '报名状态, F: 报名失败, S: 报名成功, C: 取消报名',
 	primary key(`id`),
 	key m(`match_id`),
 	key p(`player_id`)
