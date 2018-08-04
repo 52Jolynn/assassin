@@ -29,10 +29,28 @@ create table if not exists ground (
 	`type` varchar(16) not null comment '场地类型, 如七人场',
 	`club_id` int not null comment '所属俱乐部id',
 	`create_time` datetime(3) not null comment '创建时间',
-	`status` varchar(4) not null comment '状态, N: 正常, U: 使用中, D: 禁用',
+	`status` varchar(4) not null comment '状态, N: 正常, D: 禁用',
 	primary key(`id`),
 	key n(`name`),
 	key c(`club_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='俱乐部场地表';
+
+##  俱乐部场地租用时段表
+drop table if exists ground_rental;
+create table if not exists ground_rental (
+	`id` bigint not null auto_increment comment 'ID',
+	`from_time` datetime(3) not null comment '可用起始时间',
+	`to_time` datetime(3) not null comment '可用结束时间',
+	`club_id` int not null comment '所属俱乐部id',
+	`ground_id` int not null comment '场地id',
+	`rent_amount` bigint not null default 0 comment '场租，单位分',
+	`rel_rental_id` bigint null comment '关联的租用时段, 若有关联需打包租用，否则可单独租用',
+	`create_time` datetime(3) not null comment '创建时间',
+	`status` varchar(4) not null comment '状态, N: 正常, L: 锁定, R:已出租',
+	primary key(`id`),
+	key c(`club_id`),
+	key g(`ground_id`),
+	key cg(`club_id`, `ground_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='俱乐部场地表';
 
 ## 球队表
@@ -86,7 +104,7 @@ create table if not exists coupon (
 drop table if exists player;
 create table if not exists player (
 	`id` int not null auto_increment comment 'ID',
-	`username` varchar(16) not null comment '用户名',
+	`username` varchar(16) null comment '用户名',
 	`passwd` varchar(128) null comment '密码',
 	`wx_open_id` varchar(128) null comment '微信openid',
 	`name` varchar(32) not null comment '球员名称',
@@ -148,7 +166,7 @@ create table if not exists jersey_of_team (
 	`id` int not null auto_increment comment 'ID',
 	`team_id` int not null comment '球队id',
 	`home_color` varchar(16) not null comment '主场球衣颜色',
-	`away_color` varchar(16) not null comment '客场球衣颜色',
+	`away_color` varchar(16) null comment '客场球衣颜色',
 	`create_time` datetime(3) not null comment '创建时间',
 	primary key(`id`),
 	key t(`team_id`)
@@ -157,7 +175,7 @@ create table if not exists jersey_of_team (
 ## 比赛表
 drop table if exists game_of_match;
 create table if not exists game_of_match (
-	`id` int not null auto_increment comment 'ID',
+	`id` bigint not null auto_increment comment 'ID',
 	`home_team_id` int not null comment '主场球队id',
 	`away_team_id` int not null comment '客场球队id',
 	`club_id` int not null comment '俱乐部id，比赛场地',
@@ -167,7 +185,7 @@ create table if not exists game_of_match (
 	`open_time` datetime(3) not null comment '开赛时间',
 	`enroll_start_time` datetime(3) not null comment '开始报名时间',
 	`enroll_end_time` datetime(3) not null comment '截止报名时间',
-	`enroll_quota` datetime(3) not null comment '报名人数上限',
+	`enroll_quota` int not null comment '报名人数上限',
 	`rent_cost` bigint not null comment '总场租，单位元',
 	`match_duration` int not null comment '比赛时长',
 	`create_time` datetime(3) not null comment '创建时间',
@@ -181,10 +199,10 @@ create table if not exists game_of_match (
 ## 比赛报名表
 drop table if exists enroll_of_match;
 create table if not exists enroll_of_match (
-	`id` int not null auto_increment comment 'ID',
-	`match_id` int not null comment '比赛id',
+	`id` bigint not null auto_increment comment 'ID',
+	`match_id` bigint not null comment '比赛id',
 	`player_id` int not null comment '球员id',
-	`temporaty_player` int not null default 0 comment '携带散兵数',
+	`temporary_player` int not null default 0 comment '携带散兵数',
 	`create_time` datetime(3) not null comment '创建时间',
 	`status` varchar(4) not null comment '报名状态, F: 报名失败, S: 报名成功, C: 取消报名',
 	primary key(`id`),
@@ -192,11 +210,11 @@ create table if not exists enroll_of_match (
 	key p(`player_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='比赛报名表';
 
-## 比赛统计表
-drop table if exists player_stat_of_match;
-create table if not exists stat_of_match (
-	`id` int not null auto_increment comment 'ID',
-	`match_id` int not null comment '比赛id',
+## 球队比赛统计表
+drop table if exists team_stat_of_match;
+create table if not exists team_stat_of_match (
+	`id` bigint not null auto_increment comment 'ID',
+	`match_id` bigint not null comment '比赛id',
 	`type` varchar(8) not null comment '主队客队, home or away',
 	`team_id` int not null comment '比赛id',
 	`score` int not null default 0 comment '主队进球',
@@ -211,17 +229,16 @@ create table if not exists stat_of_match (
 	`yellow_card` int not null default 0 comment '黄牌数',
 	`red_card` int not null default 0 comment '红牌数',
 	`create_time` datetime(3) not null comment '创建时间',
-	`player_status` varchar(4) not null comment '到场状态, N: 到场, X: 未到场',
 	primary key(`id`),
 	key m(`match_id`),
 	key t(`team_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='比赛统计表';
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='球队比赛统计表';
 
 ## 比赛球员统计表
 drop table if exists player_stat_of_match;
-create table if not exists stat_of_match (
-	`id` int not null auto_increment comment 'ID',
-	`match_id` int not null comment '比赛id',
+create table if not exists player_stat_of_match (
+	`id` bigint not null auto_increment comment 'ID',
+	`match_id` bigint not null comment '比赛id',
 	`player_id` int not null comment '球员id',
 	`rent_amount` bigint not null comment '个人需承担的场租费用，单位分',
 	`temporary_player_rent_amount` bigint not null default 0 comment '携带的散兵需承担的场租费用，单位分',
@@ -236,7 +253,7 @@ create table if not exists stat_of_match (
 	`create_time` datetime(3) not null comment '创建时间',
 	`player_status` varchar(4) not null comment '到场状态, N: 到场, X: 未到场',
 	`pay_by_sb` char(1) not null comment '是否由他人代交场租, Y or N',
-	`pay_player_id` int not null comment '代付场租球员id, Y or N',
+	`pay_player_id` int null comment '代付场租球员id',
 	primary key(`id`),
 	key m(`match_id`),
 	key p(`player_id`)
@@ -247,13 +264,14 @@ drop table if exists accounting_of_team;
 create table if not exists accounting_of_team (
 	`id` varchar(64) not null comment '流水ID',
 	`ref_id` varchar(64) null comment '关联的流水ID',
-	`match_id` int not null comment '比赛id',
+	`match_id` bigint not null comment '比赛id',
 	`team_id` int not null comment '球队id',
 	`amount` bigint not null comment ' 金额，收入为正，支出为负',
 	`remark` varchar(128) not null comment '备注',
-	`before_balance` bigint not null comment '',
-	`after_balance` bigint not null comment '',
+	`before_balance` bigint not null comment '记账前余额',
+	`after_balance` bigint not null comment '记账后余额',
 	`type` varchar(4) not null comment '记账类型, SR(收入), ZZ(支出), CZ(冲正)',
+	`bill_date` date not null comment '账目时间',
 	`create_time` datetime(3) not null comment '创建时间',
 	primary key(`id`),
 	key m(`match_id`),
@@ -265,12 +283,14 @@ drop table if exists accounting_of_player;
 create table if not exists accounting_of_player (
 	`id` varchar(64) not null comment '流水ID',
 	`ref_id` varchar(64) null comment '关联的流水ID',
-	`match_id` int not null comment '比赛id',
+	`match_id` bigint not null comment '比赛id',
+	`team_id` int not null comment '球队id',
 	`player_id` int not null comment '球员id',
 	`amount` bigint not null comment ' 金额，充值为正，消费、提现为负',
 	`remark` varchar(128) not null comment '备注',
-	`before_balance` bigint not null comment '',
-	`after_balance` bigint not null comment '',
+	`before_balance` bigint not null comment '记账前余额',
+	`after_balance` bigint not null comment '记账后余额',
+	`bill_date` date not null comment '账目时间',
 	`type` varchar(4) not null comment '记账类型, R(充值), C(消费), W(提现), CZ(冲正)',
 	`create_time` datetime(3) not null comment '创建时间',
 	primary key(`id`),
