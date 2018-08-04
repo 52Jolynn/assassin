@@ -1,4 +1,4 @@
-package dao
+package model
 
 //俱乐部表
 type Club struct {
@@ -230,3 +230,4 @@ type AccountingOfPlayer struct {
 	BillDate      string `json:"bill_date"`
 	CreateTime    string `json:"create_time"`
 }
+

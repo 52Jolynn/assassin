@@ -6,16 +6,14 @@ import (
 	"github.com/kataras/iris/middleware/logger"
 	"time"
 	"os"
-	"github.com/kataras/golog"
 	_ "github.com/go-sql-driver/mysql"
 	"database/sql"
 	"fmt"
 	"flag"
 	"github.com/go-sql-driver/mysql"
+	"52jolynn.com/route"
+	"52jolynn.com/core"
 )
-
-var RootLogger *golog.Logger
-var Database *sql.DB
 
 func main() {
 	username := flag.String("u", "root", "-u root")
@@ -55,25 +53,27 @@ func main() {
 	//添加日志文件
 	logFile := newLogFile()
 	defer logFile.Close()
-	RootLogger = app.Logger()
-	RootLogger.AddOutput(logFile)
+	rootLogger := app.Logger()
+	rootLogger.AddOutput(logFile)
 
 	//连接数据库
 	dbConfig := mysql.Config{User: *username, Passwd: *passwd, Net: "tcp", Addr: fmt.Sprintf("%s:%s", *host, *port), DBName: *dbname}
-	RootLogger.Info(fmt.Sprintf("try to connect database: %s", dbConfig.FormatDSN()))
+	rootLogger.Info(fmt.Sprintf("try to connect database: %s", dbConfig.FormatDSN()))
 
-	var err error
-	Database, err = sql.Open("mysql", dbConfig.FormatDSN())
+	datasource, err := sql.Open("mysql", dbConfig.FormatDSN())
 	if err != nil {
 		panic(err.Error())
 	}
-	Database.SetMaxOpenConns(100)
-	Database.SetMaxIdleConns(10)
-	Database.SetConnMaxLifetime(time.Minute * 25)
-	defer Database.Close()
+	datasource.SetMaxOpenConns(100)
+	datasource.SetMaxIdleConns(10)
+	datasource.SetConnMaxLifetime(time.Minute * 25)
+	defer datasource.Close()
+
+	//注册路由
+	route.RegisterRoutes(core.NewContext(rootLogger, datasource), app)
 
 	if err := app.Run(iris.Addr(":8080"), iris.WithoutServerError(iris.ErrServerClosed)); err != nil {
-		RootLogger.Warn("Shutdown with error: " + err.Error())
+		rootLogger.Warn("Shutdown with error: " + err.Error())
 	}
 }
 
