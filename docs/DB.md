@@ -17,7 +17,7 @@ create table if not exists club (
 	`create_time` datetime(3) not null comment '创建时间',
 	`status` varchar(4) not null comment '状态, N: 正常, D: 禁用',
 	primary key(`id`),
-	key n(`name`)
+	unique key n(`name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='线下俱乐部表';
 
 ##  俱乐部场地表

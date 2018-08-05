@@ -1,9 +1,6 @@
 package main
 
 import (
-	"github.com/kataras/iris"
-	"github.com/kataras/iris/middleware/recover"
-	"github.com/kataras/iris/middleware/logger"
 	"time"
 	"os"
 	_ "github.com/go-sql-driver/mysql"
@@ -11,8 +8,11 @@ import (
 	"fmt"
 	"flag"
 	"github.com/go-sql-driver/mysql"
-	"52jolynn.com/route"
+	"52jolynn.com/router"
 	"52jolynn.com/core"
+	"github.com/gin-gonic/gin"
+	"io"
+	"log"
 )
 
 func main() {
@@ -23,42 +23,24 @@ func main() {
 	dbname := flag.String("db", "assassin", "-db assassin")
 	flag.Parse()
 
-	// Creates an application without any middleware by default.
-	app := iris.New()
+	// Creates a router without any middleware by default
+	r := gin.New()
 
-	// Recover middleware recovers from any panics and writes a 500 if there was one.
-	app.Use(recover.New())
+	// Recovery middleware recovers from any panics and writes a 500 if there was one.
+	r.Use(gin.Recovery())
 
-	requestLogger := logger.New(logger.Config{
-		// Status displays status code
-		Status: true,
-		// IP displays request's remote address
-		IP: true,
-		// Method displays the http method
-		Method: true,
-		// Path displays the request path
-		Path: true,
-		// Query appends the url query to the Path.
-		Query: true,
+	// Disable Console Color, you don't need console color when writing the logs to file.
+	gin.DisableConsoleColor()
 
-		// if !empty then its contents derives from `ctx.Values().Get("logger_message")
-		// will be added to the logs.
-		MessageContextKeys: []string{"logger_message"},
-
-		// if !empty then its contents derives from `ctx.GetHeader("User-Agent")
-		MessageHeaderKeys: []string{"User-Agent"},
-	})
-	app.Use(requestLogger)
-
-	//添加日志文件
+	//日志
+	r.Use(gin.Logger())
 	logFile := newLogFile()
 	defer logFile.Close()
-	rootLogger := app.Logger()
-	rootLogger.AddOutput(logFile)
+	gin.DefaultWriter = io.MultiWriter(logFile, os.Stdout)
 
 	//连接数据库
 	dbConfig := mysql.Config{User: *username, Passwd: *passwd, Net: "tcp", Addr: fmt.Sprintf("%s:%s", *host, *port), DBName: *dbname}
-	rootLogger.Info(fmt.Sprintf("try to connect database: %s", dbConfig.FormatDSN()))
+	log.Printf(fmt.Sprintf("try to connect database: %s", dbConfig.FormatDSN()))
 
 	datasource, err := sql.Open("mysql", dbConfig.FormatDSN())
 	if err != nil {
@@ -70,11 +52,10 @@ func main() {
 	defer datasource.Close()
 
 	//注册路由
-	route.RegisterRoutes(core.NewContext(rootLogger, datasource), app)
+	router.RegisterRoutes(core.NewContext(datasource), r)
 
-	if err := app.Run(iris.Addr(":8080"), iris.WithoutServerError(iris.ErrServerClosed)); err != nil {
-		rootLogger.Warn("Shutdown with error: " + err.Error())
-	}
+	// Listen and serve on 0.0.0.0:8080
+	r.Run(":8080")
 }
 
 func newLogFile() *os.File {
