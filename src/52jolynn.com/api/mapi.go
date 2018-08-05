@@ -38,7 +38,7 @@ func (api *mapi) CreateClub(name string, remark, address, tel *string) *core.Res
 	}
 
 	club := &model.Club{Name: name, Remark: remark, Address: address, Tel: tel, CreateTime: time.Now().Format(misc.StandardTimeFormatPattern), Status: ClubStatusNormal}
-	if _, ok := api.clubDao.Insert(club); ok {
+	if _, ok := api.clubDao.Insert(club); !ok {
 		return core.CreateResponse(misc.CodeFailure, "新建俱乐部失败")
 	}
 	return core.CreateResponseWithData(misc.CodeSuccess, club)

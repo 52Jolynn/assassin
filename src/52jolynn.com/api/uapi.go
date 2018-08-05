@@ -8,8 +8,8 @@ import (
 )
 
 type Uapi interface {
-	getClub(id int) *core.Response
-	getClubs(limit, offset int) *core.Response
+	GetClub(id int) *core.Response
+	GetClubs(name *string, status *string, limit, offset int) *core.Response
 }
 
 type uapi struct {
@@ -20,7 +20,7 @@ func NewUapi(ctx core.Context) Uapi {
 	return &uapi{clubDao: mapper.NewClubDao(ctx.Datasource())}
 }
 
-func (u *uapi) getClub(id int) *core.Response {
+func (u *uapi) GetClub(id int) *core.Response {
 	club, ok := u.clubDao.GetById(id)
 	if !ok {
 		return core.CreateResponse(misc.CodeDataDoesNotExist, fmt.Sprintf("俱乐部%s", id))
@@ -29,6 +29,17 @@ func (u *uapi) getClub(id int) *core.Response {
 
 }
 
-func (u *uapi) getClubs(limit, offset int) *core.Response {
-	return nil
+func (u *uapi) GetClubs(name *string, status *string, limit, offset int) *core.Response {
+	var statuses []string
+	if status == nil {
+		statuses = append(statuses, ClubStatusNormal, ClubStatusDisable)
+	} else {
+		statuses = append(statuses, *status)
+	}
+	result, ok := u.clubDao.QueryClub(name, statuses, limit, offset)
+	if !ok {
+		return core.CreateResponse(misc.CodeTryAgainLater)
+	}
+
+	return core.CreateResponseWithData(misc.CodeSuccess, core.NewPagination(limit, offset, u.clubDao.QueryCount(name, statuses), result))
 }

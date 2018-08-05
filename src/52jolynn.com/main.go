@@ -39,7 +39,7 @@ func main() {
 	gin.DefaultWriter = io.MultiWriter(logFile, os.Stdout)
 
 	//连接数据库
-	dbConfig := mysql.Config{User: *username, Passwd: *passwd, Net: "tcp", Addr: fmt.Sprintf("%s:%s", *host, *port), DBName: *dbname}
+	dbConfig := mysql.Config{User: *username, Passwd: *passwd, Net: "tcp", Addr: fmt.Sprintf("%s:%s", *host, *port), DBName: *dbname, AllowNativePasswords: true}
 	log.Printf(fmt.Sprintf("try to connect database: %s", dbConfig.FormatDSN()))
 
 	datasource, err := sql.Open("mysql", dbConfig.FormatDSN())

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"log"
 	"fmt"
+	"strings"
 )
 
 type ClubDao interface {
@@ -12,6 +13,8 @@ type ClubDao interface {
 	GetByName(name string) (*model.Club, bool)
 	ExistsByName(name string) (ok, exists bool)
 	Insert(club *model.Club) (*model.Club, bool)
+	QueryClub(name *string, status []string, limit, offset int) (*[]model.Club, bool)
+	QueryCount(name *string, status []string) int
 }
 
 type clubDao struct {
@@ -48,6 +51,61 @@ func (c *clubDao) ExistsByName(name string) (ok, exists bool) {
 	return false, false
 }
 
+func buildQueryClubSql(returnColumn string, name *string, status []string) (string, []interface{}) {
+	querySql := strings.Builder{}
+	querySql.WriteString(fmt.Sprintf("select %s from club where 1=1", returnColumn))
+	var args []interface{}
+	if name != nil {
+		querySql.WriteString(" and name=?")
+		args = append(args, name)
+	}
+	statusLen := len(status)
+	if statusLen > 0 {
+		querySql.WriteString(" and `status` in(")
+		for index, value := range status {
+			querySql.WriteString("?")
+			if index != statusLen-1 {
+				querySql.WriteString(",")
+			}
+			args = append(args, value)
+		}
+		querySql.WriteString(")")
+	}
+	return querySql.String(), args
+}
+
+//搜索
+func (c *clubDao) QueryClub(name *string, status []string, limit, offset int) (*[]model.Club, bool) {
+	querySql, args := buildQueryClubSql(ColumnOfClub, name, status)
+	querySql += " order by create_time desc, id limit ? offset ?"
+	args = append(args, limit, offset)
+	return c.queryClub(querySql, args...)
+}
+
+//搜索计数
+func (c *clubDao) QueryCount(name *string, status []string) int {
+	querySql, args := buildQueryClubSql("count(*)", name, status)
+	stmt, err := c.db.Prepare(querySql)
+	if err != nil {
+		log.Printf("预编译club.QueryCount语句出错，err: %s", err.Error())
+		return 0
+	}
+	rows, err := stmt.Query(args...)
+	if err != nil {
+		log.Printf("club.QueryCount查询出错，err: %s", err.Error())
+		return 0
+	}
+	if !rows.Next() {
+		return 0
+	}
+	count := 0
+	err = rows.Scan(&count)
+	if err != nil {
+		log.Printf("club.QueryCount获取数据出错，err: %s", err.Error())
+	}
+	return count
+}
+
 func (c *clubDao) queryClub(query string, args ...interface{}) (*[]model.Club, bool) {
 	stmt, err := c.db.Prepare(query)
 	if err != nil {
@@ -61,7 +119,7 @@ func (c *clubDao) queryClub(query string, args ...interface{}) (*[]model.Club, b
 		return nil, false
 	}
 
-	var clubs []model.Club
+	clubs := make([]model.Club, 0)
 	for rows.Next() {
 		club := model.Club{}
 		err = rows.Scan(&club.Id, &club.Name, &club.Remark, &club.Address, &club.Tel, &club.CreateTime, &club.Status)

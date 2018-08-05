@@ -4,29 +4,80 @@ import (
 	"52jolynn.com/core"
 	"52jolynn.com/misc"
 	"github.com/gin-gonic/gin"
-	"fmt"
 	"net/http"
+	"strconv"
 )
 
 //根据id查询俱乐部
 func getClub(ctx *gin.Context) {
+	strId := ctx.Param("id")
+	if "" == strId {
+		ctx.JSON(http.StatusOK, core.CreateResponse(misc.CodeParamMissing, "id"))
+		return
+	}
 
+	id, err := strconv.Atoi(strId)
+	if err != nil {
+		ctx.JSON(http.StatusOK, core.CreateResponse(misc.CodeParamInvalid, "id"))
+		return
+	}
+	ctx.JSON(http.StatusOK, uapi.GetClub(id))
 }
 
 func getClubs(ctx *gin.Context) {
+	var name, status *string
+	if param, exists := ctx.GetQuery("name"); exists {
+		name = &param
+	}
+	if param, exists := ctx.GetQuery("status"); exists {
+		status = &param
+	}
 
+	var strLimit, strOffset string
+	if param, exists := ctx.GetQuery("limit"); exists {
+		strLimit = param
+	} else {
+		ctx.JSON(http.StatusOK, core.CreateResponse(misc.CodeParamMissing, "limit"))
+		return
+	}
+	if param, exists := ctx.GetQuery("offset"); exists {
+		strOffset = param
+	} else {
+		ctx.JSON(http.StatusOK, core.CreateResponse(misc.CodeParamMissing, "offset"))
+		return
+	}
+	limit, err := strconv.Atoi(strLimit);
+	if err != nil {
+		ctx.JSON(http.StatusOK, core.CreateResponse(misc.CodeParamInvalid, "limit"))
+		return
+	}
+	offset, err := strconv.Atoi(strOffset);
+	if err != nil {
+		ctx.JSON(http.StatusOK, core.CreateResponse(misc.CodeParamInvalid, "offset"))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, uapi.GetClubs(name, status, limit, offset))
 }
 
 func createClub(ctx *gin.Context) {
 	name, exists := ctx.GetPostForm("name")
 	if !exists {
-		ctx.JSON(http.StatusOK, core.Response{Code: misc.CodeParamMissing, Msg: fmt.Sprintf(misc.ResponseCode[misc.CodeParamMissing], "name")})
+		ctx.JSON(http.StatusOK, core.CreateResponse(misc.CodeParamMissing, "name"))
+		return
 	}
-	remark, exists := ctx.GetPostForm("remark")
-	address, exists := ctx.GetPostForm("address")
-	tel, exists := ctx.GetPostForm("tel")
 
-	ctx.JSON(http.StatusOK, mapi.CreateClub(name, &remark, &address, &tel))
+	var remark, address, tel *string
+	if param, exists := ctx.GetPostForm("remark"); exists {
+		remark = &param
+	}
+	if param, exists := ctx.GetPostForm("address"); exists {
+		address = &param
+	}
+	if param, exists := ctx.GetPostForm("tel"); exists {
+		tel = &param
+	}
+	ctx.JSON(http.StatusOK, mapi.CreateClub(name, remark, address, tel))
 }
 
 func updateClub(ctx *gin.Context) {
