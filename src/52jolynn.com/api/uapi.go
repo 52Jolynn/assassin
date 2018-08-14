@@ -9,27 +9,31 @@ import (
 
 type Uapi interface {
 	GetClub(id int) *core.Response
-	GetClubs(name *string, status *string, limit, offset int) *core.Response
+	QueryClub(name *string, status *string, limit, offset int) *core.Response
+
+	GetGround(id int) *core.Response
+	QueryGround(name, ttype, status *string, clubId *int, limit, offset int) *core.Response
 }
 
 type uapi struct {
-	clubDao mapper.ClubDao
+	clubDao   mapper.ClubDao
+	groundDao mapper.GroundDao
 }
 
 func NewUapi(ctx core.Context) Uapi {
-	return &uapi{clubDao: mapper.NewClubDao(ctx.Datasource())}
+	return &uapi{clubDao: mapper.NewClubDao(ctx.Datasource()), groundDao: mapper.NewGroundDao(ctx.Datasource())}
 }
 
 func (u *uapi) GetClub(id int) *core.Response {
 	club, ok := u.clubDao.GetById(id)
 	if !ok {
-		return core.CreateResponse(misc.CodeDataDoesNotExist, fmt.Sprintf("俱乐部%s", id))
+		return core.CreateResponse(misc.CodeDataDoesNotExist, fmt.Sprintf("俱乐部%d", id))
 	}
 	return core.CreateResponse(misc.CodeSuccess, club)
 
 }
 
-func (u *uapi) GetClubs(name *string, status *string, limit, offset int) *core.Response {
+func (u *uapi) QueryClub(name *string, status *string, limit, offset int) *core.Response {
 	var statuses []string
 	if status == nil {
 		statuses = append(statuses, ClubStatusNormal, ClubStatusDisable)
@@ -42,4 +46,27 @@ func (u *uapi) GetClubs(name *string, status *string, limit, offset int) *core.R
 	}
 
 	return core.CreateResponseWithData(misc.CodeSuccess, core.NewPagination(limit, offset, u.clubDao.QueryCount(name, statuses), result))
+}
+
+func (u *uapi) GetGround(id int) *core.Response {
+	ground, ok := u.groundDao.GetById(id)
+	if !ok {
+		return core.CreateResponse(misc.CodeDataDoesNotExist, fmt.Sprintf("俱乐部场地%d", id))
+	}
+	return core.CreateResponse(misc.CodeSuccess, ground)
+}
+
+func (u *uapi) QueryGround(name, ttype, status *string, clubId *int, limit, offset int) *core.Response {
+	var statuses []string
+	if status == nil {
+		statuses = append(statuses, GroundStatusNormal, GroundStatusDisable)
+	} else {
+		statuses = append(statuses, *status)
+	}
+	result, ok := u.groundDao.QueryGround(name, ttype, clubId, statuses, limit, offset)
+	if !ok {
+		return core.CreateResponse(misc.CodeTryAgainLater)
+	}
+
+	return core.CreateResponseWithData(misc.CodeSuccess, core.NewPagination(limit, offset, u.groundDao.QueryCount(name, ttype, clubId, statuses), result))
 }

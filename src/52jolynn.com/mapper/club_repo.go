@@ -15,6 +15,7 @@ type ClubDao interface {
 	Insert(club *model.Club) (*model.Club, bool)
 	QueryClub(name *string, status []string, limit, offset int) (*[]model.Club, bool)
 	QueryCount(name *string, status []string) int
+	Update(club *model.Club) (int64, bool)
 }
 
 type clubDao struct {
@@ -152,4 +153,24 @@ func (c *clubDao) Insert(club *model.Club) (*model.Club, bool) {
 	}
 	club.Id = int(lastInsertId)
 	return club, true
+}
+
+func (c *clubDao) Update(club *model.Club) (int64, bool)  {
+	stmt, err := c.db.Prepare("update `club` set `name`=?, `remark`=?, `address`=?, `tel`=?, `create_time`=?, `status`=? where id=?")
+	if err != nil {
+		log.Printf("预编译更新club语句出错，err: %s", err.Error())
+		return 0, false
+	}
+	defer stmt.Close()
+	result, err := stmt.Exec(club.Name, club.Remark, club.Address, club.Tel, club.CreateTime, club.Status, club.Id)
+	if err != nil {
+		log.Printf("更新club出错，err: %s", err.Error())
+		return 0, false
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		log.Printf("获取更新club影响行数出错，err: %s", err.Error())
+		return 0, false
+	}
+	return rowsAffected, true
 }
