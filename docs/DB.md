@@ -46,12 +46,34 @@ create table if not exists ground_rental (
 	`rent_amount` bigint not null default 0 comment '场租，单位分',
 	`rel_rental_id` bigint null comment '关联的租用时段, 若有关联需打包租用，否则可单独租用',
 	`create_time` datetime(3) not null comment '创建时间',
-	`status` varchar(4) not null comment '状态, N: 正常, L: 锁定, R:已出租',
+	`status` varchar(4) not null comment '状态, N: 正常, D: 禁用',
 	primary key(`id`),
 	key c(`club_id`),
 	key g(`ground_id`),
 	key cg(`club_id`, `ground_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='俱乐部场地表';
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='俱乐部场地租用时段表';
+
+## 俱乐部场地租用记录表
+drop table if exists ground_rental_record;
+create table if not exists ground_rental_record (
+	`id` bigint not null auto_increment comment 'ID',
+	`rent_player_id` int not null comment '租用场地球员id',
+	`from_rental_id` int not null comment '租用时段id',
+	`to_rental_id` int not null comment '租用时段id',
+	`from_time` datetime(3) not null comment '租用起始时间',
+	`to_time` datetime(3) not null comment '租用结束时间',
+	`rent_date` date not null comment '租用日期',
+	`club_id` int not null comment '所属俱乐部id',
+	`ground_id` int not null comment '场地id',
+	`rent_amount` bigint not null default 0 comment '总场租，单位分',
+	`create_time` datetime(3) not null comment '创建时间',
+	`status` varchar(4) not null comment '状态, N: 正常, L: 已锁定, R: 已出租, T: 已转租',
+	primary key(`id`),
+	key c(`club_id`),
+	key g(`ground_id`),
+	key cg(`club_id`, `ground_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='俱乐部场地租用记录表';
+
 
 ## 球队表
 drop table if exists team;
