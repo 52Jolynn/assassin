@@ -31,7 +31,7 @@ const (
 	TableNameOfPlayer       = "player"
 )
 
-//根据id获取球队信息
+//根据id获取球员信息
 func (c *playerDao) GetById(id int) (*model.Player, bool) {
 	if players, ok := c.queryPlayer(fmt.Sprintf("select %s from %s where `id` = ?", ColumnOfPlayer, TableNameOfPlayer), id); ok && len(*players) == 1 {
 		return &(*players)[0], true

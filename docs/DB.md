@@ -199,6 +199,7 @@ create table if not exists jersey_of_team (
 drop table if exists game_of_match;
 create table if not exists game_of_match (
 	`id` bigint not null auto_increment comment 'ID',
+	`name` varchar(32) not null comment '比赛名字',
 	`home_team_id` int not null comment '主场球队id',
 	`away_team_id` int not null comment '客场球队id',
 	`club_id` int not null comment '俱乐部id，比赛场地',
@@ -209,8 +210,9 @@ create table if not exists game_of_match (
 	`enroll_start_time` datetime(3) not null comment '开始报名时间',
 	`enroll_end_time` datetime(3) not null comment '截止报名时间',
 	`enroll_quota` int not null comment '报名人数上限',
+	`enroll_count` int not null comment '已报名人数',
 	`rent_cost` bigint not null comment '总场租，单位元',
-	`match_duration` int not null comment '比赛时长',
+	`duration` int not null comment '比赛时长',
 	`create_time` datetime(3) not null comment '创建时间',
 	`status` varchar(4) not null comment '状态, O: 未开赛, C: 取消, P: 开赛进行中, E: 已结束',
 	primary key(`id`),

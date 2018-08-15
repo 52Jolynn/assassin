@@ -134,6 +134,7 @@ type PlayerOfTeam struct {
 //比赛表
 type GameOfMatch struct {
 	Id              int64  `json:"id"`
+	Name            string `json:"name"`
 	HomeTeamId      int    `json:"home_team_id"`
 	AwayTeamId      int    `json:"away_team_id"`
 	ClubId          int    `json:"club_id"`
@@ -144,8 +145,9 @@ type GameOfMatch struct {
 	EnrollStartTime string `json:"enroll_start_time"`
 	EnrollEndTime   string `json:"enroll_end_time"`
 	EnrollQuota     int    `json:"enroll_quota"`
+	EnrollCount     int    `json:"enroll_count"`
 	RentCost        int64  `json:"rent_cost"`
-	MatchDuration   int    `json:"match_duration"`
+	Duration        int    `json:"match_duration"`
 	CreateTime      string `json:"create_time"`
 	Status          string `json:"status"` //状态, O: 未开赛, C: 取消, P: 开赛进行中, E: 已结束
 }

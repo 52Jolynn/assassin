@@ -31,7 +31,7 @@ const (
 	TableNameOfCoupon       = "coupon"
 )
 
-//根据id获取球队信息
+//根据id获取优惠信息
 func (c *couponDao) GetById(id int) (*model.Coupon, bool) {
 	if coupons, ok := c.queryCoupon(fmt.Sprintf("select %s from %s where `id` = ?", ColumnOfCoupon, TableNameOfCoupon), id); ok && len(*coupons) == 1 {
 		return &(*coupons)[0], true

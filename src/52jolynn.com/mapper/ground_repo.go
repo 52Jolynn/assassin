@@ -30,7 +30,7 @@ const (
 	TableNameOfGround       = "ground"
 )
 
-//根据id获取俱乐部信息
+//根据id获取俱乐部场地信息
 func (c *groundDao) GetById(id int) (*model.Ground, bool) {
 	if grounds, ok := c.queryGround(fmt.Sprintf("select %s from %s where `id` = ?", ColumnOfGround, TableNameOfGround), id); ok && len(*grounds) == 1 {
 		return &(*grounds)[0], true
