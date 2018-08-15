@@ -66,6 +66,7 @@ type JerseyOfTeam struct {
 	HomeColor  string  `json:"home_color"`
 	AwayColor  *string `json:"away_color"`
 	CreateTime string  `json:"create_time"`
+	Status     string  `json:"status"`
 }
 
 //优惠券表
@@ -230,4 +231,3 @@ type AccountingOfPlayer struct {
 	BillDate      string `json:"bill_date"`
 	CreateTime    string `json:"create_time"`
 }
-

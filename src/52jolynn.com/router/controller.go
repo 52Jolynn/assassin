@@ -231,7 +231,18 @@ func updateGround(ctx *gin.Context) {
 
 //根据id查询球队
 func getTeam(ctx *gin.Context) {
+	strId := ctx.Param("id")
+	if "" == strId {
+		ctx.JSON(http.StatusOK, core.CreateResponse(misc.CodeParamMissing, "id"))
+		return
+	}
 
+	id, err := strconv.Atoi(strId)
+	if err != nil {
+		ctx.JSON(http.StatusOK, core.CreateResponse(misc.CodeParamInvalid, "id"))
+		return
+	}
+	ctx.JSON(http.StatusOK, uapi.GetGround(id))
 }
 
 func getTeams(ctx *gin.Context) {
@@ -271,10 +282,6 @@ func getCoupons(ctx *gin.Context) {
 }
 
 func createCoupon(ctx *gin.Context) {
-}
-
-func updateCoupon(ctx *gin.Context) {
-
 }
 
 //根据id查询球衣

@@ -190,6 +190,7 @@ create table if not exists jersey_of_team (
 	`home_color` varchar(16) not null comment '主场球衣颜色',
 	`away_color` varchar(16) null comment '客场球衣颜色',
 	`create_time` datetime(3) not null comment '创建时间',
+	`status` varchar(4) not null comment '状态, N: 正常, D: 禁用',
 	primary key(`id`),
 	key t(`team_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='球衣与球队表';

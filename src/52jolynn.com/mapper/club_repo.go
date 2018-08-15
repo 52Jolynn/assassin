@@ -26,11 +26,15 @@ func NewClubDao(db *sql.DB) ClubDao {
 	return &clubDao{db: db}
 }
 
-const ColumnOfClub = "`id`, `name`, `remark`, `address`, `tel`, `create_time`, `status`"
+const (
+	ColumnWithoutIdOfClub = "`name`, `remark`, `address`, `tel`, `create_time`, `status`"
+	ColumnOfClub          = "`id`, " + ColumnWithoutIdOfClub
+	TableNameOfClub       = "club"
+)
 
 //根据id获取俱乐部信息
 func (c *clubDao) GetById(id int) (*model.Club, bool) {
-	if clubs, ok := c.queryClub(fmt.Sprintf("select %s from club where `id` = ?", ColumnOfClub), id); ok && len(*clubs) == 1 {
+	if clubs, ok := c.queryClub(fmt.Sprintf("select %s from %s where `id` = ?", ColumnOfClub, TableNameOfClub), id); ok && len(*clubs) == 1 {
 		return &(*clubs)[0], true
 	}
 	return nil, false
@@ -38,7 +42,7 @@ func (c *clubDao) GetById(id int) (*model.Club, bool) {
 
 //根据name获取俱乐部信息
 func (c *clubDao) GetByName(name string) (*model.Club, bool) {
-	if clubs, ok := c.queryClub(fmt.Sprintf("select %s from club where `name` = ?", ColumnOfClub), name); ok && len(*clubs) == 1 {
+	if clubs, ok := c.queryClub(fmt.Sprintf("select %s from %s where `name` = ?", ColumnOfClub, TableNameOfClub), name); ok && len(*clubs) == 1 {
 		return &(*clubs)[0], true
 	}
 	return nil, false
@@ -46,7 +50,7 @@ func (c *clubDao) GetByName(name string) (*model.Club, bool) {
 
 //根据name判断俱乐部是否存在
 func (c *clubDao) ExistsByName(name string) (ok, exists bool) {
-	if clubs, ok := c.queryClub(fmt.Sprintf("select %s from club where `name` = ?", ColumnOfClub), name); ok {
+	if clubs, ok := c.queryClub(fmt.Sprintf("select %s from %s where `name` = ?", ColumnOfClub, TableNameOfClub), name); ok {
 		return true, len(*clubs) == 1
 	}
 	return false, false
@@ -54,7 +58,7 @@ func (c *clubDao) ExistsByName(name string) (ok, exists bool) {
 
 func buildQueryClubSql(returnColumn string, name *string, status []string) (string, []interface{}) {
 	querySql := strings.Builder{}
-	querySql.WriteString(fmt.Sprintf("select %s from club where 1=1", returnColumn))
+	querySql.WriteString(fmt.Sprintf("select %s from %s where 1=1", returnColumn, TableNameOfClub))
 	var args []interface{}
 	if name != nil {
 		querySql.WriteString(" and name=?")
@@ -135,7 +139,7 @@ func (c *clubDao) queryClub(query string, args ...interface{}) (*[]model.Club, b
 }
 
 func (c *clubDao) Insert(club *model.Club) (*model.Club, bool) {
-	stmt, err := c.db.Prepare("insert into club (`name`, `remark`, `address`, `tel`, `create_time`, `status`) values(?, ?, ?, ?, ?, ?)")
+	stmt, err := c.db.Prepare(fmt.Sprintf("insert into %s (%s) values(?, ?, ?, ?, ?, ?)", TableNameOfClub, ColumnWithoutIdOfClub))
 	if err != nil {
 		log.Printf("预编译插入club语句出错，err: %s", err.Error())
 		return nil, false
@@ -148,15 +152,15 @@ func (c *clubDao) Insert(club *model.Club) (*model.Club, bool) {
 	}
 	lastInsertId, err := result.LastInsertId()
 	if err != nil {
-		log.Printf("获取插入id出错，err: %s", err.Error())
+		log.Printf("获取插入club.id出错，err: %s", err.Error())
 		return nil, false
 	}
 	club.Id = int(lastInsertId)
 	return club, true
 }
 
-func (c *clubDao) Update(club *model.Club) (int64, bool)  {
-	stmt, err := c.db.Prepare("update `club` set `name`=?, `remark`=?, `address`=?, `tel`=?, `create_time`=?, `status`=? where id=?")
+func (c *clubDao) Update(club *model.Club) (int64, bool) {
+	stmt, err := c.db.Prepare(fmt.Sprintf("update `%s` set `name`=?, `remark`=?, `address`=?, `tel`=?, `create_time`=?, `status`=? where id=?", TableNameOfClub))
 	if err != nil {
 		log.Printf("预编译更新club语句出错，err: %s", err.Error())
 		return 0, false

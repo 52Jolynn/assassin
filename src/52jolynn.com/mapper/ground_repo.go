@@ -24,11 +24,15 @@ func NewGroundDao(db *sql.DB) GroundDao {
 	return &groundDao{db: db}
 }
 
-const ColumnOfGround = "`id`, `name`, `remark`, `type`, `club_id`, `create_time`, `status`"
+const (
+	ColumnWithoutIdOfGround = "`name`, `remark`, `type`, `club_id`, `create_time`, `status`"
+	ColumnOfGround          = "`id`, " + ColumnWithoutIdOfGround
+	TableNameOfGround       = "ground"
+)
 
 //根据id获取俱乐部信息
 func (c *groundDao) GetById(id int) (*model.Ground, bool) {
-	if grounds, ok := c.queryGround(fmt.Sprintf("select %s from ground where `id` = ?", ColumnOfGround), id); ok && len(*grounds) == 1 {
+	if grounds, ok := c.queryGround(fmt.Sprintf("select %s from %s where `id` = ?", ColumnOfGround, TableNameOfGround), id); ok && len(*grounds) == 1 {
 		return &(*grounds)[0], true
 	}
 	return nil, false
@@ -36,7 +40,7 @@ func (c *groundDao) GetById(id int) (*model.Ground, bool) {
 
 func buildQuerygroundSql(returnColumn string, name, ttype *string, clubId *int, status []string) (string, []interface{}) {
 	querySql := strings.Builder{}
-	querySql.WriteString(fmt.Sprintf("select %s from ground where 1=1", returnColumn))
+	querySql.WriteString(fmt.Sprintf("select %s from %s where 1=1", returnColumn, TableNameOfGround))
 	var args []interface{}
 	if name != nil {
 		querySql.WriteString(" and name=?")
@@ -125,7 +129,7 @@ func (c *groundDao) queryGround(query string, args ...interface{}) (*[]model.Gro
 }
 
 func (c *groundDao) Insert(ground *model.Ground) (*model.Ground, bool) {
-	stmt, err := c.db.Prepare("insert into ground (`name`, `remark`, `type`, `club_id`, `create_time`, `status`) values(?, ?, ?, ?, ?, ?)")
+	stmt, err := c.db.Prepare(fmt.Sprintf("insert into %s (%s) values(?, ?, ?, ?, ?, ?)", TableNameOfGround, ColumnWithoutIdOfGround))
 	if err != nil {
 		log.Printf("预编译插入ground语句出错，err: %s", err.Error())
 		return nil, false
@@ -138,7 +142,7 @@ func (c *groundDao) Insert(ground *model.Ground) (*model.Ground, bool) {
 	}
 	lastInsertId, err := result.LastInsertId()
 	if err != nil {
-		log.Printf("获取插入id出错，err: %s", err.Error())
+		log.Printf("获取插入ground.id出错，err: %s", err.Error())
 		return nil, false
 	}
 	ground.Id = int(lastInsertId)
@@ -146,7 +150,7 @@ func (c *groundDao) Insert(ground *model.Ground) (*model.Ground, bool) {
 }
 
 func (c *groundDao) Update(ground *model.Ground) (int64, bool) {
-	stmt, err := c.db.Prepare("update `ground` set `name`=?, `remark`=?, `type`=?, `club_id`=?, `create_time`=?, `status`=? where id=?")
+	stmt, err := c.db.Prepare(fmt.Sprintf("update `%s` set `name`=?, `remark`=?, `type`=?, `club_id`=?, `create_time`=?, `status`=? where id=?", TableNameOfGround))
 	if err != nil {
 		log.Printf("预编译更新ground语句出错，err: %s", err.Error())
 		return 0, false
