@@ -87,12 +87,12 @@ func (c *ValueColumn) GetColumnType() string {
 }
 
 type ExprColumn struct {
-	expr Expression
+	Expr Expression
 	Column
 }
 
 func (c *ExprColumn) ToSql() string {
-	return fmt.Sprintf("%s as %s", c.expr.ToSql(), c.getAlias())
+	return fmt.Sprintf("%s as %s", c.Expr.ToSql(), c.getAlias())
 }
 
 func (c *ExprColumn) getAlias() string {
@@ -156,12 +156,12 @@ func (e *ColumnExpr) GetExprType() string {
 }
 
 type UnaryExpr struct {
-	operator string
-	expr     Expression
+	Operator string
+	Expr     Expression
 }
 
 func (e *UnaryExpr) ToSql() string {
-	return fmt.Sprintf("%s%s", e.operator, e.expr.ToSql())
+	return fmt.Sprintf("%s%s", e.Operator, e.Expr.ToSql())
 }
 
 func (e *UnaryExpr) GetExprType() string {
@@ -169,11 +169,11 @@ func (e *UnaryExpr) GetExprType() string {
 }
 
 type NotExpr struct {
-	expr Expression
+	Expr Expression
 }
 
 func (e *NotExpr) ToSql() string {
-	return "NOT " + e.expr.ToSql()
+	return "NOT " + e.Expr.ToSql()
 }
 
 func (e *NotExpr) GetExprType() string {
@@ -182,13 +182,13 @@ func (e *NotExpr) GetExprType() string {
 
 //二元运算，如四则运算
 type BinaryExpr struct {
-	operator string
-	left     Expression
-	right    Expression
+	Operator string
+	Left     Expression
+	Right    Expression
 }
 
 func (e *BinaryExpr) ToSql() string {
-	return fmt.Sprintf("%s %s %s", e.left.ToSql(), e.operator, e.right.ToSql())
+	return fmt.Sprintf("%s %s %s", e.Left.ToSql(), e.Operator, e.Right.ToSql())
 }
 
 func (e *BinaryExpr) GetExprType() string {
@@ -196,12 +196,24 @@ func (e *BinaryExpr) GetExprType() string {
 }
 
 type AndExpr struct {
-	left  Expression
-	right Expression
+	Left  Expression
+	Right Expression
 }
 
 func (e *AndExpr) ToSql() string {
-	return fmt.Sprintf("%s AND %s", e.left.ToSql(), e.right.ToSql())
+	sql := strings.Builder{}
+	if e.Left.GetExprType() == ExprTypeAndExpr || e.Left.GetExprType() == ExprTypeOrExpr {
+		sql.WriteString(fmt.Sprintf("(%s)", e.Left.ToSql()))
+	} else {
+		sql.WriteString(e.Left.ToSql())
+	}
+	sql.WriteString(" AND ")
+	if e.Right.GetExprType() == ExprTypeAndExpr || e.Right.GetExprType() == ExprTypeOrExpr {
+		sql.WriteString(fmt.Sprintf("(%s)", e.Right.ToSql()))
+	} else {
+		sql.WriteString(e.Right.ToSql())
+	}
+	return sql.String()
 }
 
 func (e *AndExpr) GetExprType() string {
@@ -213,7 +225,19 @@ type OrExpr struct {
 }
 
 func (e *OrExpr) ToSql() string {
-	return fmt.Sprintf("%s OR %s", e.left.ToSql(), e.right.ToSql())
+	sql := strings.Builder{}
+	if e.Left.GetExprType() == ExprTypeAndExpr || e.Left.GetExprType() == ExprTypeOrExpr {
+		sql.WriteString(fmt.Sprintf("(%s)", e.Left.ToSql()))
+	} else {
+		sql.WriteString(e.Left.ToSql())
+	}
+	sql.WriteString(" OR ")
+	if e.Right.GetExprType() == ExprTypeAndExpr || e.Right.GetExprType() == ExprTypeOrExpr {
+		sql.WriteString(fmt.Sprintf("(%s)", e.Right.ToSql()))
+	} else {
+		sql.WriteString(e.Right.ToSql())
+	}
+	return sql.String()
 }
 
 func (e *OrExpr) GetExprType() string {
@@ -221,13 +245,13 @@ func (e *OrExpr) GetExprType() string {
 }
 
 type BetweenExpr struct {
-	expr  Expression
-	left  Expression
-	right Expression
+	Expr  Expression
+	Left  Expression
+	Right Expression
 }
 
 func (e *BetweenExpr) ToSql() string {
-	return fmt.Sprintf("%s BETWEEN %s AND %s", e.expr.ToSql(), e.left.ToSql(), e.right.ToSql())
+	return fmt.Sprintf("%s BETWEEN %s AND %s", e.Expr.ToSql(), e.Left.ToSql(), e.Right.ToSql())
 }
 
 func (e *BetweenExpr) GetExprType() string {
@@ -239,7 +263,7 @@ type NotBetweenExpr struct {
 }
 
 func (e *NotBetweenExpr) ToSql() string {
-	return fmt.Sprintf("%s NOT BETWEEN %s AND %s", e.expr.ToSql(), e.left.ToSql(), e.right.ToSql())
+	return fmt.Sprintf("%s NOT BETWEEN %s AND %s", e.Expr.ToSql(), e.Left.ToSql(), e.Right.ToSql())
 }
 
 func (e *NotBetweenExpr) GetExprType() string {
@@ -247,15 +271,15 @@ func (e *NotBetweenExpr) GetExprType() string {
 }
 
 type GroupByClause struct {
-	columns []string
+	Columns []string
 }
 
 func (g *GroupByClause) ToSql() string {
 	sql := strings.Builder{}
 	sql.WriteString("GROUP BY ")
-	for index, column := range g.columns {
+	for index, column := range g.Columns {
 		sql.WriteString(fmt.Sprintf(" %s", column))
-		if index != len(g.columns)-1 {
+		if index != len(g.Columns)-1 {
 			sql.WriteString(",")
 		}
 	}
@@ -263,15 +287,15 @@ func (g *GroupByClause) ToSql() string {
 }
 
 type HavingClause struct {
-	expr Expression
+	Expr Expression
 }
 
 func (h *HavingClause) ToSql() string {
-	return fmt.Sprintf("HAVING %s", h.expr.ToSql())
+	return fmt.Sprintf("HAVING %s", h.Expr.ToSql())
 }
 
 type OrderByClause struct {
-	columns []OrderByColumn
+	Columns []OrderByColumn
 }
 
 type OrderByColumn struct {
@@ -282,13 +306,13 @@ type OrderByColumn struct {
 func (o *OrderByClause) ToSql() string {
 	sql := strings.Builder{}
 	sql.WriteString("ORDER BY ")
-	for index, column := range o.columns {
+	for index, column := range o.Columns {
 		if column.Asc {
 			sql.WriteString(fmt.Sprintf("%s ASC", column.Name))
 		} else {
 			sql.WriteString(fmt.Sprintf("%s DESC", column.Name))
 		}
-		if index != len(o.columns)-1 {
+		if index != len(o.Columns)-1 {
 			sql.WriteString(",")
 		}
 	}
@@ -333,7 +357,7 @@ type Subquery struct {
 }
 
 func (t *Subquery) ToSql() string {
-	return fmt.Sprintf("%s as %s", t.Query.ToSql(), t.Alias)
+	return fmt.Sprintf("(%s) as %s", t.Query.ToSql(), t.Alias)
 }
 
 func (t *Subquery) GetTableType() string {
@@ -341,12 +365,12 @@ func (t *Subquery) GetTableType() string {
 }
 
 type CrossJoinTable struct {
-	left  Table
-	right Table
+	Left  Table
+	Right Table
 }
 
 func (t *CrossJoinTable) ToSql() string {
-	return fmt.Sprintf("%s, %s", t.left.ToSql(), t.right.ToSql())
+	return fmt.Sprintf("%s, %s", t.Left.ToSql(), t.Right.ToSql())
 }
 
 func (t *CrossJoinTable) GetTableType() string {
@@ -360,7 +384,7 @@ type JoinTable struct {
 }
 
 func (t *JoinTable) ToSql() string {
-	return fmt.Sprintf("%s %s %s ON %s", t.left.ToSql(), t.JoinType, t.right.ToSql(), t.On.ToSql())
+	return fmt.Sprintf("%s %s %s ON %s", t.Left.ToSql(), t.JoinType, t.Right.ToSql(), t.On.ToSql())
 }
 
 func (t *JoinTable) GetTableType() string {
@@ -379,18 +403,18 @@ type Statement interface {
 type Select struct {
 	ReturnColumn []IColumn
 	FromTable    Table
-	Condition    *Expression
+	Condition    Expression
 	GroupBy      *GroupByClause
 	Having       *HavingClause
 	OrderBy      *OrderByClause
-	Limit        *Expression
-	Offset       *Expression
+	Limit        Expression
+	Offset       Expression
 	Union        []Select
 }
 
 func (s *Select) ToSql() string {
 	sql := strings.Builder{}
-	sql.WriteString("SELECT")
+	sql.WriteString("SELECT ")
 	for index, column := range s.ReturnColumn {
 		sql.WriteString(column.ToSql())
 		if index != len(s.ReturnColumn)-1 {
@@ -401,7 +425,7 @@ func (s *Select) ToSql() string {
 	sql.WriteString(s.FromTable.ToSql())
 	if s.Condition != nil {
 		sql.WriteString(" WHERE ")
-		sql.WriteString((*s.Condition).ToSql())
+		sql.WriteString(s.Condition.ToSql())
 	}
 	if s.GroupBy != nil {
 		sql.WriteString(fmt.Sprintf(" %s", s.GroupBy.ToSql()))
@@ -413,10 +437,10 @@ func (s *Select) ToSql() string {
 		sql.WriteString(fmt.Sprintf(" %s", s.OrderBy.ToSql()))
 	}
 	if s.Limit != nil {
-		sql.WriteString(fmt.Sprintf(" LIMIT %s", (*s.Limit).ToSql()))
+		sql.WriteString(fmt.Sprintf(" LIMIT %s", s.Limit.ToSql()))
 	}
 	if s.Offset != nil {
-		sql.WriteString(fmt.Sprintf(" OFFSET %s", (*s.Offset).ToSql()))
+		sql.WriteString(fmt.Sprintf(" OFFSET %s", s.Offset.ToSql()))
 	}
 	if len(s.Union) > 0 {
 		for _, union := range s.Union {
