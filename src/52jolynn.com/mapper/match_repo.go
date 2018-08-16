@@ -19,6 +19,9 @@ type GameOfMatchDao interface {
 	QueryEnrollOfMatch(matchId int, playerId *int, status []string) (*[]model.EnrollOfMatch, bool)
 	InsertEnrollOfMatch(e *model.EnrollOfMatch) (*model.EnrollOfMatch, bool)
 	UpdateEnrollOfMatchStatus(id int64, status, oldStatus string) (int64, bool)
+
+	InsertTeamStatOfMatch(stat *model.TeamStatOfMatch) (*model.TeamStatOfMatch, bool)
+	QueryTeamStatOfMatch(matchId, teamId *int, ttype, startTime, endTime *string, limit, offset int) ([]*model.TeamStatOfMatch, bool)
 }
 
 type gameOfMatchDao struct {
@@ -87,12 +90,12 @@ func (c *gameOfMatchDao) QueryCount(clubId *int, startOpenTime, endOpenTime *str
 	querySql, args := buildQueryGameOfMatchSql("count(*)", clubId, startOpenTime, endOpenTime, status)
 	stmt, err := c.db.Prepare(querySql)
 	if err != nil {
-		log.Printf("预编译gameOfMatch.QueryCount语句出错，err: %s", err.Error())
+		log.Printf("预编译%s.QueryCount语句出错，err: %s\n", TableNameOfGameOfMatch, err.Error())
 		return 0
 	}
 	rows, err := stmt.Query(args...)
 	if err != nil {
-		log.Printf("game_of_match.QueryCount查询出错，err: %s", err.Error())
+		log.Printf("%s.QueryCount查询出错，err: %s\n", TableNameOfGameOfMatch, err.Error())
 		return 0
 	}
 	if !rows.Next() {
@@ -101,7 +104,7 @@ func (c *gameOfMatchDao) QueryCount(clubId *int, startOpenTime, endOpenTime *str
 	count := 0
 	err = rows.Scan(&count)
 	if err != nil {
-		log.Printf("game_of_match.QueryCount获取数据出错，err: %s", err.Error())
+		log.Printf("%s.QueryCount获取数据出错，err: %s\n", TableNameOfGameOfMatch, err.Error())
 	}
 	return count
 }
@@ -109,13 +112,13 @@ func (c *gameOfMatchDao) QueryCount(clubId *int, startOpenTime, endOpenTime *str
 func (c *gameOfMatchDao) queryGameOfMatch(query string, args ...interface{}) (*[]model.GameOfMatch, bool) {
 	stmt, err := c.db.Prepare(query)
 	if err != nil {
-		log.Printf("预编译game_of_match.queryGameOfMatch语句出错，err: %s", err.Error())
+		log.Printf("预编译%s.queryGameOfMatch语句出错，err: %s\n", TableNameOfGameOfMatch, err.Error())
 		return nil, false
 	}
 	defer stmt.Close()
 	rows, err := stmt.Query(args...)
 	if err != nil {
-		log.Printf("game_of_match.queryGameOfMatch查询出错，err: %s", err.Error())
+		log.Printf("%s.queryGameOfMatch查询出错，err: %s\n", TableNameOfGameOfMatch, err.Error())
 		return nil, false
 	}
 
@@ -124,7 +127,7 @@ func (c *gameOfMatchDao) queryGameOfMatch(query string, args ...interface{}) (*[
 		gameOfMatch := model.GameOfMatch{}
 		err = rows.Scan(&gameOfMatch.Id, &gameOfMatch.Name, &gameOfMatch.HomeTeamId, &gameOfMatch.AwayTeamId, &gameOfMatch.ClubId, &gameOfMatch.GroundId, &gameOfMatch.HomeJerseyColor, &gameOfMatch.AwayJerseyColor, &gameOfMatch.OpenTime, &gameOfMatch.EnrollStartTime, &gameOfMatch.EnrollEndTime, &gameOfMatch.EnrollQuota, &gameOfMatch.EnrollCount, &gameOfMatch.RentCost, &gameOfMatch.Duration, &gameOfMatch.CreateTime, &gameOfMatch.Status)
 		if err != nil {
-			log.Printf("game_of_match.queryGameOfMatch获取数据出错，err: %s", err.Error())
+			log.Printf("%s.queryGameOfMatch获取数据出错，err: %s\n", TableNameOfGameOfMatch, err.Error())
 			return nil, false
 		}
 		gameOfMatchs = append(gameOfMatchs, gameOfMatch)
@@ -136,18 +139,18 @@ func (c *gameOfMatchDao) queryGameOfMatch(query string, args ...interface{}) (*[
 func (c *gameOfMatchDao) Insert(gameOfMatch *model.GameOfMatch) (*model.GameOfMatch, bool) {
 	stmt, err := c.db.Prepare(fmt.Sprintf("insert into %s (%s) values(?, ?, ?, ?, ?, ?)", TableNameOfGameOfMatch, ColumnWithoutIdOfGameOfMatch))
 	if err != nil {
-		log.Printf("预编译插入game_of_match语句出错，err: %s", err.Error())
+		log.Printf("预编译插入game_of_match语句出错，err: %s\n", err.Error())
 		return nil, false
 	}
 	defer stmt.Close()
 	result, err := stmt.Exec(gameOfMatch.Name, gameOfMatch.HomeTeamId, gameOfMatch.AwayTeamId, gameOfMatch.ClubId, gameOfMatch.GroundId, gameOfMatch.HomeJerseyColor, gameOfMatch.AwayJerseyColor, gameOfMatch.OpenTime, gameOfMatch.EnrollStartTime, gameOfMatch.EnrollEndTime, gameOfMatch.EnrollQuota, gameOfMatch.EnrollCount, gameOfMatch.RentCost, gameOfMatch.Duration, gameOfMatch.CreateTime, gameOfMatch.Status)
 	if err != nil {
-		log.Printf("插入game_of_match出错，err: %s", err.Error())
+		log.Printf("插入game_of_match出错，err: %s\n", err.Error())
 		return nil, false
 	}
 	lastInsertId, err := result.LastInsertId()
 	if err != nil {
-		log.Printf("获取插入game_of_match.id出错，err: %s", err.Error())
+		log.Printf("获取插入game_of_match.id出错，err: %s\n", err.Error())
 		return nil, false
 	}
 	gameOfMatch.Id = lastInsertId
@@ -158,18 +161,18 @@ func (c *gameOfMatchDao) Insert(gameOfMatch *model.GameOfMatch) (*model.GameOfMa
 func (c *gameOfMatchDao) UpdateStatus(id int, status, oldStatus string) (int64, bool) {
 	stmt, err := c.db.Prepare(fmt.Sprintf("update `%s` set `status`=? where id=? and `status`=?", TableNameOfGameOfMatch))
 	if err != nil {
-		log.Printf("预编译更新game_of_match.status语句出错，err: %s", err.Error())
+		log.Printf("预编译更新game_of_match.status语句出错，err: %s\n", err.Error())
 		return 0, false
 	}
 	defer stmt.Close()
 	result, err := stmt.Exec(status, id, oldStatus)
 	if err != nil {
-		log.Printf("更新game_of_match.status出错，err: %s", err.Error())
+		log.Printf("更新game_of_match.status出错，err: %s\n", err.Error())
 		return 0, false
 	}
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		log.Printf("获取更新game_of_match.status影响行数出错，err: %s", err.Error())
+		log.Printf("获取更新game_of_match.status影响行数出错，err: %s\n", err.Error())
 		return 0, false
 	}
 	return rowsAffected, true
@@ -179,18 +182,18 @@ func (c *gameOfMatchDao) UpdateStatus(id int, status, oldStatus string) (int64, 
 func (c *gameOfMatchDao) UpdateEnrollCount(id, count int) (int64, bool) {
 	stmt, err := c.db.Prepare(fmt.Sprintf("update `%s` set `enroll_count`=? where id=? and `enroll_quota`>=?", TableNameOfGameOfMatch))
 	if err != nil {
-		log.Printf("预编译更新game_of_match.enroll_count语句出错，err: %s", err.Error())
+		log.Printf("预编译更新game_of_match.enroll_count语句出错，err: %s\n", err.Error())
 		return 0, false
 	}
 	defer stmt.Close()
 	result, err := stmt.Exec(count, id, count)
 	if err != nil {
-		log.Printf("更新game_of_match.enroll_count出错，err: %s", err.Error())
+		log.Printf("更新game_of_match.enroll_count出错，err: %s\n", err.Error())
 		return 0, false
 	}
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		log.Printf("获取更新game_of_match.enroll_count影响行数出错，err: %s", err.Error())
+		log.Printf("获取更新game_of_match.enroll_count影响行数出错，err: %s\n", err.Error())
 		return 0, false
 	}
 	return rowsAffected, true
@@ -208,42 +211,44 @@ func (c *gameOfMatchDao) QueryEnrollOfMatch(matchId int, playerId *int, status [
 	return c.queryEnrollOfMatch(querySql, args...)
 }
 
+//保存球员比赛报名记录
 func (c *gameOfMatchDao) InsertEnrollOfMatch(enroll *model.EnrollOfMatch) (*model.EnrollOfMatch, bool) {
 	stmt, err := c.db.Prepare(fmt.Sprintf("insert into %s (%s) values(?, ?, ?, ?, ?)", TableNameOfEnrollOfMatch, ColumnWithoutIdOfEnrollOfMatch))
 	if err != nil {
-		log.Printf("预编译插入game_of_match语句出错，err: %s", err.Error())
+		log.Printf("预编译插入game_of_match语句出错，err: %s\n", err.Error())
 		return nil, false
 	}
 	defer stmt.Close()
 	result, err := stmt.Exec(enroll.MatchId, enroll.PlayerId, enroll.TemporaryPlayer, enroll.CreateTime, enroll.Status)
 	if err != nil {
-		log.Printf("插入game_of_match出错，err: %s", err.Error())
+		log.Printf("插入game_of_match出错，err: %s\n", err.Error())
 		return nil, false
 	}
 	lastInsertId, err := result.LastInsertId()
 	if err != nil {
-		log.Printf("获取插入game_of_match.id出错，err: %s", err.Error())
+		log.Printf("获取插入game_of_match.id出错，err: %s\n", err.Error())
 		return nil, false
 	}
 	enroll.Id = int(lastInsertId)
 	return enroll, true
 }
 
+//更新球员比赛报名状态
 func (c *gameOfMatchDao) UpdateEnrollOfMatchStatus(id int64, status, oldStatus string) (int64, bool) {
 	stmt, err := c.db.Prepare(fmt.Sprintf("update `%s` set `status`=? where id=? and `status`=?", TableNameOfEnrollOfMatch))
 	if err != nil {
-		log.Printf("预编译更新enroll_of_match.status语句出错，err: %s", err.Error())
+		log.Printf("预编译更新enroll_of_match.status语句出错，err: %s\n", err.Error())
 		return 0, false
 	}
 	defer stmt.Close()
 	result, err := stmt.Exec(status, id, oldStatus)
 	if err != nil {
-		log.Printf("更新enroll_of_match.status出错，err: %s", err.Error())
+		log.Printf("更新enroll_of_match.status出错，err: %s\n", err.Error())
 		return 0, false
 	}
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		log.Printf("获取更新enroll_of_match.status影响行数出错，err: %s", err.Error())
+		log.Printf("获取更新enroll_of_match.status影响行数出错，err: %s\n", err.Error())
 		return 0, false
 	}
 	return rowsAffected, true
@@ -252,13 +257,13 @@ func (c *gameOfMatchDao) UpdateEnrollOfMatchStatus(id int64, status, oldStatus s
 func (c *gameOfMatchDao) queryEnrollOfMatch(query string, args ...interface{}) (*[]model.EnrollOfMatch, bool) {
 	stmt, err := c.db.Prepare(query)
 	if err != nil {
-		log.Printf("预编译enroll_of_match.queryEnrollOfMatch语句出错，err: %s", err.Error())
+		log.Printf("预编译enroll_of_match.queryEnrollOfMatch语句出错，err: %s\n", err.Error())
 		return nil, false
 	}
 	defer stmt.Close()
 	rows, err := stmt.Query(args...)
 	if err != nil {
-		log.Printf("enroll_of_match.queryEnrollOfMatch查询出错，err: %s", err.Error())
+		log.Printf("enroll_of_match.queryEnrollOfMatch查询出错，err: %s\n", err.Error())
 		return nil, false
 	}
 
@@ -267,7 +272,7 @@ func (c *gameOfMatchDao) queryEnrollOfMatch(query string, args ...interface{}) (
 		enrollOfMatch := model.EnrollOfMatch{}
 		err = rows.Scan(&enrollOfMatch.Id, &enrollOfMatch.MatchId, &enrollOfMatch.PlayerId, &enrollOfMatch.TemporaryPlayer, &enrollOfMatch.CreateTime, &enrollOfMatch.Status)
 		if err != nil {
-			log.Printf("enroll_of_match.queryEnrollOfMatch获取数据出错，err: %s", err.Error())
+			log.Printf("enroll_of_match.queryEnrollOfMatch获取数据出错，err: %s\n", err.Error())
 			return nil, false
 		}
 		enrollOfMatchs = append(enrollOfMatchs, enrollOfMatch)
@@ -299,4 +304,37 @@ func buildQueryEnrollOfMatchSql(returnColumn string, matchId int, playerId *int,
 		querySql.WriteString(")")
 	}
 	return querySql.String(), args
+}
+
+const (
+	ColumnWithoutIdTeamStatOfMatch = "`match_id`, `type`, `team_id`, `score`, `rent_amount`, `shot`, `foul`, `free_kick`, `penalty_kick`, `offside`, `corner`, `pass`, `yellow_card`, `red_card`, `create_time`"
+	ColumnTeamStatOfMatch          = "`id`, " + ColumnWithoutIdTeamStatOfMatch
+	TableNameTeamStatOfMatch       = "team_stat_of_match"
+	MatchTeamTypeHome              = "home"
+	MatchTeamTypeAway              = "away"
+)
+
+func (c *gameOfMatchDao) InsertTeamStatOfMatch(stat *model.TeamStatOfMatch) (*model.TeamStatOfMatch, bool) {
+	stmt, err := c.db.Prepare(fmt.Sprintf("insert into %s (%s) values(?, ?, ?, ?, ?)", TableNameOfEnrollOfMatch, ColumnWithoutIdOfEnrollOfMatch))
+	if err != nil {
+		log.Printf("预编译插入%s语句出错，err: %s\n", TableNameTeamStatOfMatch, err.Error())
+		return nil, false
+	}
+	defer stmt.Close()
+	result, err := stmt.Exec(stat.MatchId, stat.Ttype, stat.TeamId, stat.Score, stat.RentAmount, stat.Shot, stat.Foul, stat.FreeKick, stat.PenaltyKick, stat.Offside, stat.Corner, &stat.Pass, stat.YellowCard, stat.RedCard, stat.CreateTime)
+	if err != nil {
+		log.Printf("插入%s出错，err: %s\n", TableNameTeamStatOfMatch, err.Error())
+		return nil, false
+	}
+	lastInsertId, err := result.LastInsertId()
+	if err != nil {
+		log.Printf("获取插入%s.id出错，err: %s\n", TableNameTeamStatOfMatch, err.Error())
+		return nil, false
+	}
+	stat.Id = lastInsertId
+	return stat, true
+}
+
+func (c *gameOfMatchDao) QueryTeamStatOfMatch(matchId, teamId *int, ttype, startTime, endTime *string, limit, offset int) ([]*model.TeamStatOfMatch, bool) {
+	return nil, false
 }

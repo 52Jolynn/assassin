@@ -79,12 +79,12 @@ func (c *couponDao) QueryCount(clubId, teamId *int, status []string) int {
 	querySql, args := buildQueryCouponSql("count(*)", clubId, teamId, status)
 	stmt, err := c.db.Prepare(querySql)
 	if err != nil {
-		log.Printf("预编译couponDao.QueryCount语句出错，err: %s", err.Error())
+		log.Printf("预编译%s.QueryCount语句出错，err: %s\n", TableNameOfCoupon, err.Error())
 		return 0
 	}
 	rows, err := stmt.Query(args...)
 	if err != nil {
-		log.Printf("couponDao.QueryCount查询出错，err: %s", err.Error())
+		log.Printf("%s.QueryCount查询出错，err: %s\n", TableNameOfCoupon, err.Error())
 		return 0
 	}
 	if !rows.Next() {
@@ -93,7 +93,7 @@ func (c *couponDao) QueryCount(clubId, teamId *int, status []string) int {
 	count := 0
 	err = rows.Scan(&count)
 	if err != nil {
-		log.Printf("couponDao.QueryCount获取数据出错，err: %s", err.Error())
+		log.Printf("%s.QueryCount获取数据出错，err: %s\n", TableNameOfCoupon, err.Error())
 	}
 	return count
 }
@@ -101,13 +101,13 @@ func (c *couponDao) QueryCount(clubId, teamId *int, status []string) int {
 func (c *couponDao) queryCoupon(query string, args ...interface{}) (*[]model.Coupon, bool) {
 	stmt, err := c.db.Prepare(query)
 	if err != nil {
-		log.Printf("预编译couponDao.queryCoupon语句出错，err: %s", err.Error())
+		log.Printf("预编译%s.queryCoupon语句出错，err: %s\n", TableNameOfCoupon, err.Error())
 		return nil, false
 	}
 	defer stmt.Close()
 	rows, err := stmt.Query(args...)
 	if err != nil {
-		log.Printf("couponDao.queryCoupon查询出错，err: %s", err.Error())
+		log.Printf("%s.queryCoupon查询出错，err: %s\n", TableNameOfCoupon, err.Error())
 		return nil, false
 	}
 
@@ -116,7 +116,7 @@ func (c *couponDao) queryCoupon(query string, args ...interface{}) (*[]model.Cou
 		coupon := model.Coupon{}
 		err = rows.Scan(&coupon.Id, &coupon.ClubId, &coupon.TeamId, &coupon.Amount, &coupon.LeastAmount, &coupon.EffectiveTime, &coupon.UsedTime, &coupon.ExpireTime, &coupon.CreateTime, &coupon.Status)
 		if err != nil {
-			log.Printf("couponDao.queryCoupon获取数据出错，err: %s", err.Error())
+			log.Printf("%s.queryCoupon获取数据出错，err: %s\n", TableNameOfCoupon, err.Error())
 			return nil, false
 		}
 		coupons = append(coupons, coupon)
@@ -128,18 +128,18 @@ func (c *couponDao) queryCoupon(query string, args ...interface{}) (*[]model.Cou
 func (c *couponDao) Insert(coupon *model.Coupon) (*model.Coupon, bool) {
 	stmt, err := c.db.Prepare(fmt.Sprintf("insert into %s (%s) values(?, ?, ?, ?, ?, ?, ?, ?)", TableNameOfCoupon, ColumnWithoutIdOfCoupon))
 	if err != nil {
-		log.Printf("预编译插入coupon语句出错，err: %s", err.Error())
+		log.Printf("预编译插入%s语句出错，err: %s\n", TableNameOfCoupon, err.Error())
 		return nil, false
 	}
 	defer stmt.Close()
 	result, err := stmt.Exec(coupon.ClubId, coupon.TeamId, coupon.Amount, coupon.LeastAmount, coupon.EffectiveTime, coupon.UsedTime, coupon.ExpireTime, coupon.CreateTime, coupon.Status)
 	if err != nil {
-		log.Printf("插入coupon出错，err: %s", err.Error())
+		log.Printf("插入%s出错，err: %s\n", TableNameOfCoupon, err.Error())
 		return nil, false
 	}
 	lastInsertId, err := result.LastInsertId()
 	if err != nil {
-		log.Printf("获取插入coupon.id出错，err: %s", err.Error())
+		log.Printf("获取插入%s.id出错，err: %s\n", TableNameOfCoupon, err.Error())
 		return nil, false
 	}
 	coupon.Id = int(lastInsertId)
@@ -149,18 +149,18 @@ func (c *couponDao) Insert(coupon *model.Coupon) (*model.Coupon, bool) {
 func (c *couponDao) UpdateUsedTime(id int, usedTime, status string) (int64, bool) {
 	stmt, err := c.db.Prepare(fmt.Sprintf("update %s set `used_time`=?, `status`=? where id=?", TableNameOfCoupon))
 	if err != nil {
-		log.Printf("预编译更新coupon.usedTime语句出错，err: %s", err.Error())
+		log.Printf("预编译更新%s.usedTime语句出错，err: %s\n", TableNameOfCoupon, err.Error())
 		return 0, false
 	}
 	defer stmt.Close()
 	result, err := stmt.Exec(usedTime, status, id)
 	if err != nil {
-		log.Printf("更新coupon.usedTime出错，err: %s", err.Error())
+		log.Printf("更新%s.usedTime出错，err: %s\n", TableNameOfCoupon, err.Error())
 		return 0, false
 	}
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		log.Printf("获取更新coupon.usedTime影响行数出错，err: %s", err.Error())
+		log.Printf("获取更新%s.usedTime影响行数出错，err: %s\n", TableNameOfCoupon, err.Error())
 		return 0, false
 	}
 	return rowsAffected, true
@@ -169,18 +169,18 @@ func (c *couponDao) UpdateUsedTime(id int, usedTime, status string) (int64, bool
 func (c *couponDao) UpdateStatus(id int, status, oldStatus string) (int64, bool) {
 	stmt, err := c.db.Prepare(fmt.Sprintf("update %s set `status`=? where id=? and `status`=?", TableNameOfCoupon))
 	if err != nil {
-		log.Printf("预编译更新coupon.status语句出错，err: %s", err.Error())
+		log.Printf("预编译更新%s.status语句出错，err: %s\n", TableNameOfCoupon, err.Error())
 		return 0, false
 	}
 	defer stmt.Close()
 	result, err := stmt.Exec(status, id, oldStatus)
 	if err != nil {
-		log.Printf("更新coupon.status出错，err: %s", err.Error())
+		log.Printf("更新%s.status出错，err: %s\n", TableNameOfCoupon, err.Error())
 		return 0, false
 	}
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		log.Printf("获取更新coupon.status影响行数出错，err: %s", err.Error())
+		log.Printf("获取更新%s.status影响行数出错，err: %s\n", TableNameOfCoupon, err.Error())
 		return 0, false
 	}
 	return rowsAffected, true

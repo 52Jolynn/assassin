@@ -82,12 +82,12 @@ func (c *groundDao) QueryCount(name, ttype *string, clubId *int, status []string
 	querySql, args := buildQuerygroundSql("count(*)", name, ttype, clubId, status)
 	stmt, err := c.db.Prepare(querySql)
 	if err != nil {
-		log.Printf("预编译groundDao.QueryCount语句出错，err: %s", err.Error())
+		log.Printf("预编译%s.QueryCount语句出错，err: %s\n", TableNameOfGround, err.Error())
 		return 0
 	}
 	rows, err := stmt.Query(args...)
 	if err != nil {
-		log.Printf("groundDao.QueryCount查询出错，err: %s", err.Error())
+		log.Printf("%s.QueryCount查询出错，err: %s\n", TableNameOfGround, err.Error())
 		return 0
 	}
 	if !rows.Next() {
@@ -96,7 +96,7 @@ func (c *groundDao) QueryCount(name, ttype *string, clubId *int, status []string
 	count := 0
 	err = rows.Scan(&count)
 	if err != nil {
-		log.Printf("groundDao.QueryCount获取数据出错，err: %s", err.Error())
+		log.Printf("%s.QueryCount获取数据出错，err: %s\n", TableNameOfGround, err.Error())
 	}
 	return count
 }
@@ -104,13 +104,13 @@ func (c *groundDao) QueryCount(name, ttype *string, clubId *int, status []string
 func (c *groundDao) queryGround(query string, args ...interface{}) (*[]model.Ground, bool) {
 	stmt, err := c.db.Prepare(query)
 	if err != nil {
-		log.Printf("预编译groundDao.queryGround语句出错，err: %s", err.Error())
+		log.Printf("预编译%s.queryGround语句出错，err: %s\n", TableNameOfGround, err.Error())
 		return nil, false
 	}
 	defer stmt.Close()
 	rows, err := stmt.Query(args...)
 	if err != nil {
-		log.Printf("groundDao.queryGround查询出错，err: %s", err.Error())
+		log.Printf("%s.queryGround查询出错，err: %s\n", TableNameOfGround, err.Error())
 		return nil, false
 	}
 
@@ -119,7 +119,7 @@ func (c *groundDao) queryGround(query string, args ...interface{}) (*[]model.Gro
 		ground := model.Ground{}
 		err = rows.Scan(&ground.Id, &ground.Name, &ground.Remark, &ground.Ttype, &ground.ClubId, &ground.CreateTime, &ground.Status)
 		if err != nil {
-			log.Printf("groundDao.queryGround获取数据出错，err: %s", err.Error())
+			log.Printf("%s.queryGround获取数据出错，err: %s\n", TableNameOfGround, err.Error())
 			return nil, false
 		}
 		grounds = append(grounds, ground)
@@ -131,18 +131,18 @@ func (c *groundDao) queryGround(query string, args ...interface{}) (*[]model.Gro
 func (c *groundDao) Insert(ground *model.Ground) (*model.Ground, bool) {
 	stmt, err := c.db.Prepare(fmt.Sprintf("insert into %s (%s) values(?, ?, ?, ?, ?, ?)", TableNameOfGround, ColumnWithoutIdOfGround))
 	if err != nil {
-		log.Printf("预编译插入ground语句出错，err: %s", err.Error())
+		log.Printf("预编译插入%s语句出错，err: %s\n", TableNameOfGround, err.Error())
 		return nil, false
 	}
 	defer stmt.Close()
 	result, err := stmt.Exec(ground.Name, ground.Remark, ground.Ttype, ground.ClubId, ground.CreateTime, ground.Status)
 	if err != nil {
-		log.Printf("插入ground出错，err: %s", err.Error())
+		log.Printf("插入%s出错，err: %s\n", TableNameOfGround, err.Error())
 		return nil, false
 	}
 	lastInsertId, err := result.LastInsertId()
 	if err != nil {
-		log.Printf("获取插入ground.id出错，err: %s", err.Error())
+		log.Printf("获取插入%s.id出错，err: %s\n", TableNameOfGround, err.Error())
 		return nil, false
 	}
 	ground.Id = int(lastInsertId)
@@ -152,18 +152,18 @@ func (c *groundDao) Insert(ground *model.Ground) (*model.Ground, bool) {
 func (c *groundDao) Update(ground *model.Ground) (int64, bool) {
 	stmt, err := c.db.Prepare(fmt.Sprintf("update `%s` set `name`=?, `remark`=?, `type`=?, `club_id`=?, `create_time`=?, `status`=? where id=?", TableNameOfGround))
 	if err != nil {
-		log.Printf("预编译更新ground语句出错，err: %s", err.Error())
+		log.Printf("预编译更新%s语句出错，err: %s\n", TableNameOfGround, err.Error())
 		return 0, false
 	}
 	defer stmt.Close()
 	result, err := stmt.Exec(ground.Name, ground.Remark, ground.Ttype, ground.ClubId, ground.CreateTime, ground.Status, ground.Id)
 	if err != nil {
-		log.Printf("更新ground出错，err: %s", err.Error())
+		log.Printf("更新%s出错，err: %s\n", TableNameOfGround, err.Error())
 		return 0, false
 	}
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		log.Printf("获取更新ground影响行数出错，err: %s", err.Error())
+		log.Printf("获取更新%s影响行数出错，err: %s\n", TableNameOfGround, err.Error())
 		return 0, false
 	}
 	return rowsAffected, true

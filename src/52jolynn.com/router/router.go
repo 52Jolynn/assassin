@@ -52,7 +52,6 @@ func RegisterRoutes(ctx core.Context, router *gin.Engine) {
 		v1.GET("/coupon/:id", getCoupon)
 		v1.GET("/coupons", getCoupons)
 		v1.POST("/coupon", createCoupon)
-		v1.PUT("/coupon", updateCoupon)
 	}
 	//球衣
 	{

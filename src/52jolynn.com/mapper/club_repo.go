@@ -92,12 +92,12 @@ func (c *clubDao) QueryCount(name *string, status []string) int {
 	querySql, args := buildQueryClubSql("count(*)", name, status)
 	stmt, err := c.db.Prepare(querySql)
 	if err != nil {
-		log.Printf("预编译club.QueryCount语句出错，err: %s", err.Error())
+		log.Printf("预编译%s.QueryCount语句出错，err: %s\n", TableNameOfClub, err.Error())
 		return 0
 	}
 	rows, err := stmt.Query(args...)
 	if err != nil {
-		log.Printf("club.QueryCount查询出错，err: %s", err.Error())
+		log.Printf("%s.QueryCount查询出错，err: %s\n", TableNameOfClub, err.Error())
 		return 0
 	}
 	if !rows.Next() {
@@ -106,7 +106,7 @@ func (c *clubDao) QueryCount(name *string, status []string) int {
 	count := 0
 	err = rows.Scan(&count)
 	if err != nil {
-		log.Printf("club.QueryCount获取数据出错，err: %s", err.Error())
+		log.Printf("%s.QueryCount获取数据出错，err: %s\n", TableNameOfClub, err.Error())
 	}
 	return count
 }
@@ -114,13 +114,13 @@ func (c *clubDao) QueryCount(name *string, status []string) int {
 func (c *clubDao) queryClub(query string, args ...interface{}) (*[]model.Club, bool) {
 	stmt, err := c.db.Prepare(query)
 	if err != nil {
-		log.Printf("预编译club.queryClub语句出错，err: %s", err.Error())
+		log.Printf("预编译%s.queryClub语句出错，err: %s\n", TableNameOfClub, err.Error())
 		return nil, false
 	}
 	defer stmt.Close()
 	rows, err := stmt.Query(args...)
 	if err != nil {
-		log.Printf("club.queryClub查询出错，err: %s", err.Error())
+		log.Printf("%s.queryClub查询出错，err: %s\n", TableNameOfClub, err.Error())
 		return nil, false
 	}
 
@@ -129,7 +129,7 @@ func (c *clubDao) queryClub(query string, args ...interface{}) (*[]model.Club, b
 		club := model.Club{}
 		err = rows.Scan(&club.Id, &club.Name, &club.Remark, &club.Address, &club.Tel, &club.CreateTime, &club.Status)
 		if err != nil {
-			log.Printf("club.queryClub获取数据出错，err: %s", err.Error())
+			log.Printf("%s.queryClub获取数据出错，err: %s\n", TableNameOfClub, err.Error())
 			return nil, false
 		}
 		clubs = append(clubs, club)
@@ -141,18 +141,18 @@ func (c *clubDao) queryClub(query string, args ...interface{}) (*[]model.Club, b
 func (c *clubDao) Insert(club *model.Club) (*model.Club, bool) {
 	stmt, err := c.db.Prepare(fmt.Sprintf("insert into %s (%s) values(?, ?, ?, ?, ?, ?)", TableNameOfClub, ColumnWithoutIdOfClub))
 	if err != nil {
-		log.Printf("预编译插入club语句出错，err: %s", err.Error())
+		log.Printf("预编译插入%s语句出错，err: %s\n", TableNameOfClub, err.Error())
 		return nil, false
 	}
 	defer stmt.Close()
 	result, err := stmt.Exec(club.Name, club.Remark, club.Address, club.Tel, club.CreateTime, club.Status)
 	if err != nil {
-		log.Printf("插入club出错，err: %s", err.Error())
+		log.Printf("插入%s出错，err: %s\n", TableNameOfClub, err.Error())
 		return nil, false
 	}
 	lastInsertId, err := result.LastInsertId()
 	if err != nil {
-		log.Printf("获取插入club.id出错，err: %s", err.Error())
+		log.Printf("获取插入%s.id出错，err: %s\n", TableNameOfClub, err.Error())
 		return nil, false
 	}
 	club.Id = int(lastInsertId)
@@ -162,18 +162,18 @@ func (c *clubDao) Insert(club *model.Club) (*model.Club, bool) {
 func (c *clubDao) Update(club *model.Club) (int64, bool) {
 	stmt, err := c.db.Prepare(fmt.Sprintf("update `%s` set `name`=?, `remark`=?, `address`=?, `tel`=?, `create_time`=?, `status`=? where id=?", TableNameOfClub))
 	if err != nil {
-		log.Printf("预编译更新club语句出错，err: %s", err.Error())
+		log.Printf("预编译更新%s语句出错，err: %s\n", TableNameOfClub, err.Error())
 		return 0, false
 	}
 	defer stmt.Close()
 	result, err := stmt.Exec(club.Name, club.Remark, club.Address, club.Tel, club.CreateTime, club.Status, club.Id)
 	if err != nil {
-		log.Printf("更新club出错，err: %s", err.Error())
+		log.Printf("更新%s出错，err: %s\n", TableNameOfClub, err.Error())
 		return 0, false
 	}
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		log.Printf("获取更新club影响行数出错，err: %s", err.Error())
+		log.Printf("获取更新%s影响行数出错，err: %s\n", TableNameOfClub, err.Error())
 		return 0, false
 	}
 	return rowsAffected, true
