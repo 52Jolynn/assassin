@@ -11,14 +11,14 @@ import (
 type TeamDao interface {
 	GetById(id int) (*model.Team, bool)
 	Insert(team *model.Team) (*model.Team, bool)
-	QueryTeam(name *string, status []string, limit, offset int) (*[]model.Team, bool)
-	QueryCount(name *string, status []string) int
+	QueryTeam(name sql.NullString, status []string, limit, offset int) ([]model.Team, bool)
+	QueryCount(name sql.NullString, status []string) int
 	Update(team *model.Team) (int64, bool)
 
 	JoinClub(tc *model.TeamOfClub) (*model.TeamOfClub, bool)
 
 	GetJerseyById(id int) (*model.JerseyOfTeam, bool)
-	QueryJersey(teamId int, status []string) (*[]model.JerseyOfTeam, bool)
+	QueryJersey(teamId int, status []string) ([]model.JerseyOfTeam, bool)
 	InsertJersey(j *model.JerseyOfTeam) (*model.JerseyOfTeam, bool)
 	UpdateJerseyStatus(id int, status, oldStatus string) (int64, bool)
 }
@@ -39,17 +39,17 @@ const (
 
 //根据id获取球队信息
 func (c *teamDao) GetById(id int) (*model.Team, bool) {
-	if teams, ok := c.queryTeam(fmt.Sprintf("select %s from %s where `id` = ?", ColumnOfTeam, TableNameOfTeam), id); ok && len(*teams) == 1 {
-		return &(*teams)[0], true
+	if teams, ok := c.queryTeam(fmt.Sprintf("select %s from %s where `id` = ?", ColumnOfTeam, TableNameOfTeam), id); ok && len(teams) == 1 {
+		return &teams[0], true
 	}
 	return nil, false
 }
 
-func buildQueryteamSql(returnColumn string, name *string, status []string) (string, []interface{}) {
+func buildQueryTeamSql(returnColumn string, name sql.NullString, status []string) (string, []interface{}) {
 	querySql := strings.Builder{}
 	querySql.WriteString(fmt.Sprintf("select %s from %s where 1=1", returnColumn, TableNameOfTeam))
 	var args []interface{}
-	if name != nil {
+	if name.Valid {
 		querySql.WriteString(" and name=?")
 		args = append(args, name)
 	}
@@ -69,16 +69,16 @@ func buildQueryteamSql(returnColumn string, name *string, status []string) (stri
 }
 
 //搜索
-func (c *teamDao) QueryTeam(name *string, status []string, limit, offset int) (*[]model.Team, bool) {
-	querySql, args := buildQueryteamSql(ColumnOfTeam, name, status)
+func (c *teamDao) QueryTeam(name sql.NullString, status []string, limit, offset int) ([]model.Team, bool) {
+	querySql, args := buildQueryTeamSql(ColumnOfTeam, name, status)
 	querySql += " order by create_time desc, id limit ? offset ?"
 	args = append(args, limit, offset)
 	return c.queryTeam(querySql, args...)
 }
 
 //搜索计数
-func (c *teamDao) QueryCount(name *string, status []string) int {
-	querySql, args := buildQueryteamSql("count(*)", name, status)
+func (c *teamDao) QueryCount(name sql.NullString, status []string) int {
+	querySql, args := buildQueryTeamSql("count(*)", name, status)
 	stmt, err := c.db.Prepare(querySql)
 	if err != nil {
 		log.Printf("预编译teamDao.QueryCount语句出错，err: %s", err.Error())
@@ -100,7 +100,7 @@ func (c *teamDao) QueryCount(name *string, status []string) int {
 	return count
 }
 
-func (c *teamDao) queryTeam(query string, args ...interface{}) (*[]model.Team, bool) {
+func (c *teamDao) queryTeam(query string, args ...interface{}) ([]model.Team, bool) {
 	stmt, err := c.db.Prepare(query)
 	if err != nil {
 		log.Printf("预编译teamDao.queryTeam语句出错，err: %s", err.Error())
@@ -124,7 +124,7 @@ func (c *teamDao) queryTeam(query string, args ...interface{}) (*[]model.Team, b
 		teams = append(teams, team)
 	}
 
-	return &teams, true
+	return teams, true
 }
 
 func (c *teamDao) Insert(team *model.Team) (*model.Team, bool) {
@@ -201,13 +201,13 @@ const (
 )
 
 func (c *teamDao) GetJerseyById(id int) (*model.JerseyOfTeam, bool) {
-	if jerseys, ok := c.queryJerseyOfTeam(fmt.Sprintf("select %s from %s where `id` = ?", ColumnOfJerseyOfTeam, TableNameOfJerseyOfTeam), id); ok && len(*jerseys) == 1 {
-		return &(*jerseys)[0], true
+	if jerseys, ok := c.queryJerseyOfTeam(fmt.Sprintf("select %s from %s where `id` = ?", ColumnOfJerseyOfTeam, TableNameOfJerseyOfTeam), id); ok && len(jerseys) == 1 {
+		return &jerseys[0], true
 	}
 	return nil, false
 }
 
-func (c *teamDao) QueryJersey(teamId int, status []string) (*[]model.JerseyOfTeam, bool) {
+func (c *teamDao) QueryJersey(teamId int, status []string) ([]model.JerseyOfTeam, bool) {
 	querySql := strings.Builder{}
 	querySql.WriteString(fmt.Sprintf("select %s from %s where team_id=?", ColumnOfJerseyOfTeam, TableNameOfJerseyOfTeam))
 
@@ -270,7 +270,7 @@ func (c *teamDao) UpdateJerseyStatus(id int, status, oldStatus string) (int64, b
 	return rowsAffected, true
 }
 
-func (c *teamDao) queryJerseyOfTeam(query string, args ...interface{}) (*[]model.JerseyOfTeam, bool) {
+func (c *teamDao) queryJerseyOfTeam(query string, args ...interface{}) ([]model.JerseyOfTeam, bool) {
 	stmt, err := c.db.Prepare(query)
 	if err != nil {
 		log.Printf("预编译teamDao.queryJerseyOfTeam语句出错，err: %s", err.Error())
@@ -294,5 +294,5 @@ func (c *teamDao) queryJerseyOfTeam(query string, args ...interface{}) (*[]model
 		jerseys = append(jerseys, jersey)
 	}
 
-	return &jerseys, true
+	return jerseys, true
 }

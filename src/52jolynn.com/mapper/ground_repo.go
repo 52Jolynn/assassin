@@ -11,8 +11,8 @@ import (
 type GroundDao interface {
 	GetById(id int) (*model.Ground, bool)
 	Insert(ground *model.Ground) (*model.Ground, bool)
-	QueryGround(name, ttype *string, clubId *int, status []string, limit, offset int) (*[]model.Ground, bool)
-	QueryCount(name, ttype *string, clubId *int, status []string) int
+	QueryGround(name, ttype sql.NullString, clubId sql.NullInt64, status []string, limit, offset int) ([]model.Ground, bool)
+	QueryCount(name, ttype sql.NullString, clubId sql.NullInt64, status []string) int
 	Update(ground *model.Ground) (int64, bool)
 }
 
@@ -32,27 +32,27 @@ const (
 
 //根据id获取俱乐部场地信息
 func (c *groundDao) GetById(id int) (*model.Ground, bool) {
-	if grounds, ok := c.queryGround(fmt.Sprintf("select %s from %s where `id` = ?", ColumnOfGround, TableNameOfGround), id); ok && len(*grounds) == 1 {
-		return &(*grounds)[0], true
+	if grounds, ok := c.queryGround(fmt.Sprintf("select %s from %s where `id` = ?", ColumnOfGround, TableNameOfGround), id); ok && len(grounds) == 1 {
+		return &grounds[0], true
 	}
 	return nil, false
 }
 
-func buildQuerygroundSql(returnColumn string, name, ttype *string, clubId *int, status []string) (string, []interface{}) {
+func buildQueryGroundSql(returnColumn string, name, ttype sql.NullString, clubId sql.NullInt64, status []string) (string, []interface{}) {
 	querySql := strings.Builder{}
 	querySql.WriteString(fmt.Sprintf("select %s from %s where 1=1", returnColumn, TableNameOfGround))
 	var args []interface{}
-	if name != nil {
+	if name.Valid {
 		querySql.WriteString(" and name=?")
 		args = append(args, name)
 	}
-	if ttype != nil {
+	if ttype.Valid {
 		querySql.WriteString(" and `type`=?")
-		args = append(args, *ttype)
+		args = append(args, ttype.String)
 	}
-	if clubId != nil {
+	if clubId.Valid {
 		querySql.WriteString(" and club_id=?")
-		args = append(args, *clubId)
+		args = append(args, clubId.Int64)
 	}
 	statusLen := len(status)
 	if statusLen > 0 {
@@ -70,24 +70,25 @@ func buildQuerygroundSql(returnColumn string, name, ttype *string, clubId *int, 
 }
 
 //搜索
-func (c *groundDao) QueryGround(name, ttype *string, clubId *int, status []string, limit, offset int) (*[]model.Ground, bool) {
-	querySql, args := buildQuerygroundSql(ColumnOfGround, name, ttype, clubId, status)
+func (c *groundDao) QueryGround(name, ttype sql.NullString, clubId sql.NullInt64, status []string, limit, offset int) ([]model.Ground, bool) {
+	querySql, args := buildQueryGroundSql(ColumnOfGround, name, ttype, clubId, status)
 	querySql += " order by create_time desc, id limit ? offset ?"
 	args = append(args, limit, offset)
 	return c.queryGround(querySql, args...)
 }
 
 //搜索计数
-func (c *groundDao) QueryCount(name, ttype *string, clubId *int, status []string) int {
-	querySql, args := buildQuerygroundSql("count(*)", name, ttype, clubId, status)
+func (c *groundDao) QueryCount(name, ttype sql.NullString, clubId sql.NullInt64, status []string) int {
+	querySql, args := buildQueryGroundSql("count(*)", name, ttype, clubId, status)
 	stmt, err := c.db.Prepare(querySql)
+	sqlErrMsg := fmt.Sprintf("%s.QueryCount", TableNameOfGround)
 	if err != nil {
-		log.Printf("预编译%s.QueryCount语句出错，err: %s\n", TableNameOfGround, err.Error())
+		log.Printf("预编译%s语句出错，err: %s\n", sqlErrMsg, err.Error())
 		return 0
 	}
 	rows, err := stmt.Query(args...)
 	if err != nil {
-		log.Printf("%s.QueryCount查询出错，err: %s\n", TableNameOfGround, err.Error())
+		log.Printf("%s查询出错，err: %s\n", sqlErrMsg, err.Error())
 		return 0
 	}
 	if !rows.Next() {
@@ -96,21 +97,22 @@ func (c *groundDao) QueryCount(name, ttype *string, clubId *int, status []string
 	count := 0
 	err = rows.Scan(&count)
 	if err != nil {
-		log.Printf("%s.QueryCount获取数据出错，err: %s\n", TableNameOfGround, err.Error())
+		log.Printf("%s获取数据出错，err: %s\n", sqlErrMsg, err.Error())
 	}
 	return count
 }
 
-func (c *groundDao) queryGround(query string, args ...interface{}) (*[]model.Ground, bool) {
+func (c *groundDao) queryGround(query string, args ...interface{}) ([]model.Ground, bool) {
 	stmt, err := c.db.Prepare(query)
+	sqlErrMsg := fmt.Sprintf("%s.queryGround", TableNameOfGround)
 	if err != nil {
-		log.Printf("预编译%s.queryGround语句出错，err: %s\n", TableNameOfGround, err.Error())
+		log.Printf("预编译%s语句出错，err: %s\n", sqlErrMsg, err.Error())
 		return nil, false
 	}
 	defer stmt.Close()
 	rows, err := stmt.Query(args...)
 	if err != nil {
-		log.Printf("%s.queryGround查询出错，err: %s\n", TableNameOfGround, err.Error())
+		log.Printf("%s查询出错，err: %s\n", sqlErrMsg, err.Error())
 		return nil, false
 	}
 
@@ -119,13 +121,13 @@ func (c *groundDao) queryGround(query string, args ...interface{}) (*[]model.Gro
 		ground := model.Ground{}
 		err = rows.Scan(&ground.Id, &ground.Name, &ground.Remark, &ground.Ttype, &ground.ClubId, &ground.CreateTime, &ground.Status)
 		if err != nil {
-			log.Printf("%s.queryGround获取数据出错，err: %s\n", TableNameOfGround, err.Error())
+			log.Printf("%s获取数据出错，err: %s\n", sqlErrMsg, err.Error())
 			return nil, false
 		}
 		grounds = append(grounds, ground)
 	}
 
-	return &grounds, true
+	return grounds, true
 }
 
 func (c *groundDao) Insert(ground *model.Ground) (*model.Ground, bool) {

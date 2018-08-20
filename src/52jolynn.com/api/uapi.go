@@ -5,6 +5,7 @@ import (
 	"52jolynn.com/core"
 	"52jolynn.com/misc"
 	"fmt"
+	"database/sql"
 )
 
 type Uapi interface {
@@ -40,12 +41,18 @@ func (u *uapi) QueryClub(name *string, status *string, limit, offset int) *core.
 	} else {
 		statuses = append(statuses, *status)
 	}
-	result, ok := u.clubDao.QueryClub(name, statuses, limit, offset)
+
+	nameStr := sql.NullString{Valid: false}
+	if name != nil {
+		nameStr.Valid = true
+		nameStr.String = *name
+	}
+	result, ok := u.clubDao.QueryClub(nameStr, statuses, limit, offset)
 	if !ok {
 		return core.CreateResponse(misc.CodeTryAgainLater)
 	}
 
-	return core.CreateResponseWithData(misc.CodeSuccess, core.NewPagination(limit, offset, u.clubDao.QueryCount(name, statuses), result))
+	return core.CreateResponseWithData(misc.CodeSuccess, core.NewPagination(limit, offset, u.clubDao.QueryCount(nameStr, statuses), result))
 }
 
 func (u *uapi) GetGround(id int) *core.Response {
@@ -63,10 +70,27 @@ func (u *uapi) QueryGround(name, ttype, status *string, clubId *int, limit, offs
 	} else {
 		statuses = append(statuses, *status)
 	}
-	result, ok := u.groundDao.QueryGround(name, ttype, clubId, statuses, limit, offset)
+
+	nameStr := sql.NullString{Valid: false}
+	if name != nil {
+		nameStr.Valid = true
+		nameStr.String = *name
+	}
+	typeStr := sql.NullString{Valid: false}
+	if ttype != nil {
+		typeStr.Valid = true
+		typeStr.String = *ttype
+	}
+	clubIdVal := sql.NullInt64{Valid: false}
+	if clubId != nil {
+		clubIdVal.Valid = true
+		clubIdVal.Int64 = int64(*clubId)
+	}
+
+	result, ok := u.groundDao.QueryGround(nameStr, typeStr, clubIdVal, statuses, limit, offset)
 	if !ok {
 		return core.CreateResponse(misc.CodeTryAgainLater)
 	}
 
-	return core.CreateResponseWithData(misc.CodeSuccess, core.NewPagination(limit, offset, u.groundDao.QueryCount(name, ttype, clubId, statuses), result))
+	return core.CreateResponseWithData(misc.CodeSuccess, core.NewPagination(limit, offset, u.groundDao.QueryCount(nameStr, typeStr, clubIdVal, statuses), result))
 }

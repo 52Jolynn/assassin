@@ -13,8 +13,8 @@ type ClubDao interface {
 	GetByName(name string) (*model.Club, bool)
 	ExistsByName(name string) (ok, exists bool)
 	Insert(club *model.Club) (*model.Club, bool)
-	QueryClub(name *string, status []string, limit, offset int) (*[]model.Club, bool)
-	QueryCount(name *string, status []string) int
+	QueryClub(name sql.NullString, status []string, limit, offset int) ([]model.Club, bool)
+	QueryCount(name sql.NullString, status []string) int
 	Update(club *model.Club) (int64, bool)
 }
 
@@ -34,16 +34,16 @@ const (
 
 //根据id获取俱乐部信息
 func (c *clubDao) GetById(id int) (*model.Club, bool) {
-	if clubs, ok := c.queryClub(fmt.Sprintf("select %s from %s where `id` = ?", ColumnOfClub, TableNameOfClub), id); ok && len(*clubs) == 1 {
-		return &(*clubs)[0], true
+	if clubs, ok := c.queryClub(fmt.Sprintf("select %s from %s where `id` = ?", ColumnOfClub, TableNameOfClub), id); ok && len(clubs) == 1 {
+		return &clubs[0], true
 	}
 	return nil, false
 }
 
 //根据name获取俱乐部信息
 func (c *clubDao) GetByName(name string) (*model.Club, bool) {
-	if clubs, ok := c.queryClub(fmt.Sprintf("select %s from %s where `name` = ?", ColumnOfClub, TableNameOfClub), name); ok && len(*clubs) == 1 {
-		return &(*clubs)[0], true
+	if clubs, ok := c.queryClub(fmt.Sprintf("select %s from %s where `name` = ?", ColumnOfClub, TableNameOfClub), name); ok && len(clubs) == 1 {
+		return &clubs[0], true
 	}
 	return nil, false
 }
@@ -51,16 +51,16 @@ func (c *clubDao) GetByName(name string) (*model.Club, bool) {
 //根据name判断俱乐部是否存在
 func (c *clubDao) ExistsByName(name string) (ok, exists bool) {
 	if clubs, ok := c.queryClub(fmt.Sprintf("select %s from %s where `name` = ?", ColumnOfClub, TableNameOfClub), name); ok {
-		return true, len(*clubs) == 1
+		return true, len(clubs) == 1
 	}
 	return false, false
 }
 
-func buildQueryClubSql(returnColumn string, name *string, status []string) (string, []interface{}) {
+func buildQueryClubSql(returnColumn string, name sql.NullString, status []string) (string, []interface{}) {
 	querySql := strings.Builder{}
 	querySql.WriteString(fmt.Sprintf("select %s from %s where 1=1", returnColumn, TableNameOfClub))
 	var args []interface{}
-	if name != nil {
+	if name.Valid {
 		querySql.WriteString(" and name=?")
 		args = append(args, name)
 	}
@@ -80,7 +80,7 @@ func buildQueryClubSql(returnColumn string, name *string, status []string) (stri
 }
 
 //搜索
-func (c *clubDao) QueryClub(name *string, status []string, limit, offset int) (*[]model.Club, bool) {
+func (c *clubDao) QueryClub(name sql.NullString, status []string, limit, offset int) ([]model.Club, bool) {
 	querySql, args := buildQueryClubSql(ColumnOfClub, name, status)
 	querySql += " order by create_time desc, id limit ? offset ?"
 	args = append(args, limit, offset)
@@ -88,16 +88,17 @@ func (c *clubDao) QueryClub(name *string, status []string, limit, offset int) (*
 }
 
 //搜索计数
-func (c *clubDao) QueryCount(name *string, status []string) int {
+func (c *clubDao) QueryCount(name sql.NullString, status []string) int {
 	querySql, args := buildQueryClubSql("count(*)", name, status)
 	stmt, err := c.db.Prepare(querySql)
+	sqlErrMsg := fmt.Sprintf("%s.QueryCount", TableNameOfClub)
 	if err != nil {
-		log.Printf("预编译%s.QueryCount语句出错，err: %s\n", TableNameOfClub, err.Error())
+		log.Printf("预编译%s语句出错，err: %s\n", sqlErrMsg, err.Error())
 		return 0
 	}
 	rows, err := stmt.Query(args...)
 	if err != nil {
-		log.Printf("%s.QueryCount查询出错，err: %s\n", TableNameOfClub, err.Error())
+		log.Printf("%s查询出错，err: %s\n", sqlErrMsg, err.Error())
 		return 0
 	}
 	if !rows.Next() {
@@ -106,21 +107,22 @@ func (c *clubDao) QueryCount(name *string, status []string) int {
 	count := 0
 	err = rows.Scan(&count)
 	if err != nil {
-		log.Printf("%s.QueryCount获取数据出错，err: %s\n", TableNameOfClub, err.Error())
+		log.Printf("%s获取数据出错，err: %s\n", sqlErrMsg, err.Error())
 	}
 	return count
 }
 
-func (c *clubDao) queryClub(query string, args ...interface{}) (*[]model.Club, bool) {
+func (c *clubDao) queryClub(query string, args ...interface{}) ([]model.Club, bool) {
 	stmt, err := c.db.Prepare(query)
+	sqlErrMsg := fmt.Sprintf("%s.queryClub", TableNameOfClub)
 	if err != nil {
-		log.Printf("预编译%s.queryClub语句出错，err: %s\n", TableNameOfClub, err.Error())
+		log.Printf("预编译%s语句出错，err: %s\n", sqlErrMsg, err.Error())
 		return nil, false
 	}
 	defer stmt.Close()
 	rows, err := stmt.Query(args...)
 	if err != nil {
-		log.Printf("%s.queryClub查询出错，err: %s\n", TableNameOfClub, err.Error())
+		log.Printf("%s查询出错，err: %s\n", sqlErrMsg, err.Error())
 		return nil, false
 	}
 
@@ -129,13 +131,13 @@ func (c *clubDao) queryClub(query string, args ...interface{}) (*[]model.Club, b
 		club := model.Club{}
 		err = rows.Scan(&club.Id, &club.Name, &club.Remark, &club.Address, &club.Tel, &club.CreateTime, &club.Status)
 		if err != nil {
-			log.Printf("%s.queryClub获取数据出错，err: %s\n", TableNameOfClub, err.Error())
+			log.Printf("%s获取数据出错，err: %s\n", sqlErrMsg, err.Error())
 			return nil, false
 		}
 		clubs = append(clubs, club)
 	}
 
-	return &clubs, true
+	return clubs, true
 }
 
 func (c *clubDao) Insert(club *model.Club) (*model.Club, bool) {

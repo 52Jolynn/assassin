@@ -11,8 +11,8 @@ import (
 type PlayerDao interface {
 	GetById(id int) (*model.Player, bool)
 	Insert(player *model.Player) (*model.Player, bool)
-	QueryPlayer(username, name, mobile, level *string, age *int, status []string, limit, offset int) (*[]model.Player, bool)
-	QueryCount(username, name, mobile, level *string, age *int, status []string) int
+	QueryPlayer(username, name, mobile, level sql.NullString, age sql.NullInt64, status []string, limit, offset int) ([]model.Player, bool)
+	QueryCount(username, name, mobile, level sql.NullString, age sql.NullInt64, status []string) int
 
 	JoinTeam(pt *model.PlayerOfTeam) (*model.PlayerOfTeam, bool)
 }
@@ -33,33 +33,33 @@ const (
 
 //根据id获取球员信息
 func (c *playerDao) GetById(id int) (*model.Player, bool) {
-	if players, ok := c.queryPlayer(fmt.Sprintf("select %s from %s where `id` = ?", ColumnOfPlayer, TableNameOfPlayer), id); ok && len(*players) == 1 {
-		return &(*players)[0], true
+	if players, ok := c.queryPlayer(fmt.Sprintf("select %s from %s where `id` = ?", ColumnOfPlayer, TableNameOfPlayer), id); ok && len(players) == 1 {
+		return &players[0], true
 	}
 	return nil, false
 }
 
-func buildQueryplayerSql(returnColumn string, username, name, mobile, level *string, age *int, status []string) (string, []interface{}) {
+func buildQueryPlayerSql(returnColumn string, username, name, mobile, level sql.NullString, age sql.NullInt64, status []string) (string, []interface{}) {
 	querySql := strings.Builder{}
 	querySql.WriteString(fmt.Sprintf("select %s from %s where 1=1", returnColumn, TableNameOfPlayer))
 	var args []interface{}
-	if username != nil {
+	if username.Valid {
 		querySql.WriteString(" and username=?")
 		args = append(args, name)
 	}
-	if name != nil {
+	if name.Valid {
 		querySql.WriteString(" and name=?")
 		args = append(args, name)
 	}
-	if mobile != nil {
+	if mobile.Valid {
 		querySql.WriteString(" and mobile=?")
 		args = append(args, name)
 	}
-	if level != nil {
+	if level.Valid {
 		querySql.WriteString(" and level=?")
 		args = append(args, name)
 	}
-	if age != nil {
+	if age.Valid {
 		querySql.WriteString(" and age=?")
 		args = append(args, name)
 	}
@@ -79,16 +79,16 @@ func buildQueryplayerSql(returnColumn string, username, name, mobile, level *str
 }
 
 //搜索
-func (c *playerDao) QueryPlayer(username, name, mobile, level *string, age *int, status []string, limit, offset int) (*[]model.Player, bool) {
-	querySql, args := buildQueryplayerSql(ColumnOfPlayer, username, name, mobile, level, age, status)
+func (c *playerDao) QueryPlayer(username, name, mobile, level sql.NullString, age sql.NullInt64, status []string, limit, offset int) ([]model.Player, bool) {
+	querySql, args := buildQueryPlayerSql(ColumnOfPlayer, username, name, mobile, level, age, status)
 	querySql += " order by create_time desc, id limit ? offset ?"
 	args = append(args, limit, offset)
 	return c.queryPlayer(querySql, args...)
 }
 
 //搜索计数
-func (c *playerDao) QueryCount(username, name, mobile, level *string, age *int, status []string) int {
-	querySql, args := buildQueryplayerSql("count(*)", username, name, mobile, level, age, status)
+func (c *playerDao) QueryCount(username, name, mobile, level sql.NullString, age sql.NullInt64, status []string) int {
+	querySql, args := buildQueryPlayerSql("count(*)", username, name, mobile, level, age, status)
 	stmt, err := c.db.Prepare(querySql)
 	if err != nil {
 		log.Printf("预编译playerDao.QueryCount语句出错，err: %s", err.Error())
@@ -110,7 +110,7 @@ func (c *playerDao) QueryCount(username, name, mobile, level *string, age *int, 
 	return count
 }
 
-func (c *playerDao) queryPlayer(query string, args ...interface{}) (*[]model.Player, bool) {
+func (c *playerDao) queryPlayer(query string, args ...interface{}) ([]model.Player, bool) {
 	stmt, err := c.db.Prepare(query)
 	if err != nil {
 		log.Printf("预编译playerDao.queryPlayer语句出错，err: %s", err.Error())
@@ -134,7 +134,7 @@ func (c *playerDao) queryPlayer(query string, args ...interface{}) (*[]model.Pla
 		players = append(players, player)
 	}
 
-	return &players, true
+	return players, true
 }
 
 func (c *playerDao) Insert(player *model.Player) (*model.Player, bool) {

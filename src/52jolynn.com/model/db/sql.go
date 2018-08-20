@@ -107,15 +107,18 @@ func (c *ExprColumn) GetColumnType() string {
 }
 
 const (
-	ExprTypeValueExpr      = "ValueExpr"
-	ExprTypeColumnExpr     = "ColumnExpr"
-	ExprTypeUnaryExpr      = "UnaryExpr"
-	ExprTypeBinaryExpr     = "BinaryExpr"
-	ExprTypeNotExpr        = "NotExpr"
-	ExprTypeAndExpr        = "AndExpr"
-	ExprTypeOrExpr         = "OrExpr"
-	ExprTypeBetweenExpr    = "BetweenExpr"
-	ExprTypeNotBetweenExpr = "NotBetweenExpr"
+	ExprTypeValueExpr     = "ValueExpr"
+	ExprTypeColumnExpr    = "ColumnExpr"
+	ExprTypeUnaryExpr     = "UnaryExpr"
+	ExprTypeBinaryExpr    = "BinaryExpr"
+	ExprTypeNotExpr       = "NotExpr"
+	ExprTypeAndExpr       = "AndExpr"
+	ExprTypeOrExpr        = "OrExpr"
+	ExprTypeBetweenExpr   = "BetweenExpr"
+	ExprTypeInExpr        = "InExpr"
+	ExprTypeExistsExpr    = "ExistsExpr"
+	ExprTypeValueListExpr = "ValueListExpr"
+	ExprTypeSubqueryExpr  = "SubqueryExpr"
 )
 
 type Expression interface {
@@ -245,12 +248,16 @@ func (e *OrExpr) GetExprType() string {
 }
 
 type BetweenExpr struct {
+	Not   bool
 	Expr  Expression
 	Left  Expression
 	Right Expression
 }
 
 func (e *BetweenExpr) ToSql() string {
+	if e.Not {
+		return fmt.Sprintf("%s NOT BETWEEN %s AND %s", e.Expr.ToSql(), e.Left.ToSql(), e.Right.ToSql())
+	}
 	return fmt.Sprintf("%s BETWEEN %s AND %s", e.Expr.ToSql(), e.Left.ToSql(), e.Right.ToSql())
 }
 
@@ -258,27 +265,80 @@ func (e *BetweenExpr) GetExprType() string {
 	return ExprTypeBetweenExpr
 }
 
-type NotBetweenExpr struct {
-	BetweenExpr
+type InExpr struct {
+	Not  bool
+	Expr Expression
 }
 
-func (e *NotBetweenExpr) ToSql() string {
-	return fmt.Sprintf("%s NOT BETWEEN %s AND %s", e.Expr.ToSql(), e.Left.ToSql(), e.Right.ToSql())
+func (e *InExpr) ToSql() string {
+	if e.Not {
+		return fmt.Sprintf("%s NOT IN", e.Expr.ToSql())
+	}
+	return fmt.Sprintf("%s IN", e.Expr.ToSql())
 }
 
-func (e *NotBetweenExpr) GetExprType() string {
-	return ExprTypeNotBetweenExpr
+func (e *InExpr) GetExprType() string {
+	return ExprTypeInExpr
+}
+
+type ValueListExpr struct {
+	Values []Expression
+}
+
+func (e *ValueListExpr) ToSql() string {
+	sql := strings.Builder{}
+	sql.WriteString("(")
+	for index, value := range e.Values {
+		sql.WriteString(value.ToSql())
+		if index != len(e.Values)-1 {
+			sql.WriteString(", ")
+		}
+	}
+	sql.WriteString(")")
+	return sql.String()
+}
+
+func (e *ValueListExpr) GetExprType() string {
+	return ExprTypeValueListExpr
+}
+
+type ExistsExpr struct {
+	Not  bool
+	Expr Expression
+}
+
+func (e *ExistsExpr) ToSql() string {
+	if e.Not {
+		return fmt.Sprintf("%s NOT EXISTS", e.Expr.ToSql())
+	}
+	return fmt.Sprintf("%s EXISTS", e.Expr.ToSql())
+}
+
+func (e *ExistsExpr) GetExprType() string {
+	return ExprTypeExistsExpr
+}
+
+type SubqueryExpr struct {
+	Expr Select
+}
+
+func (e *SubqueryExpr) ToSql() string {
+	return fmt.Sprintf("(%s)", e.Expr.ToSql())
+}
+
+func (e *SubqueryExpr) GetExprType() string {
+	return ExprTypeSubqueryExpr
 }
 
 type GroupByClause struct {
-	Columns []string
+	Columns []Expression
 }
 
 func (g *GroupByClause) ToSql() string {
 	sql := strings.Builder{}
 	sql.WriteString("GROUP BY ")
 	for index, column := range g.Columns {
-		sql.WriteString(fmt.Sprintf(" %s", column))
+		sql.WriteString(fmt.Sprintf(" %s", column.ToSql()))
 		if index != len(g.Columns)-1 {
 			sql.WriteString(",")
 		}
@@ -299,7 +359,7 @@ type OrderByClause struct {
 }
 
 type OrderByColumn struct {
-	Name string
+	Expr Expression
 	Asc  bool
 }
 
@@ -308,9 +368,9 @@ func (o *OrderByClause) ToSql() string {
 	sql.WriteString("ORDER BY ")
 	for index, column := range o.Columns {
 		if column.Asc {
-			sql.WriteString(fmt.Sprintf("%s ASC", column.Name))
+			sql.WriteString(fmt.Sprintf("%s ASC", column.Expr.ToSql()))
 		} else {
-			sql.WriteString(fmt.Sprintf("%s DESC", column.Name))
+			sql.WriteString(fmt.Sprintf("%s DESC", column.Expr.ToSql()))
 		}
 		if index != len(o.Columns)-1 {
 			sql.WriteString(",")
