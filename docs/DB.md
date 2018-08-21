@@ -241,7 +241,7 @@ create table if not exists team_stat_of_match (
 	`id` bigint not null auto_increment comment 'ID',
 	`match_id` bigint not null comment '比赛id',
 	`type` varchar(8) not null comment '主队客队, home or away',
-	`team_id` int not null comment '比赛id',
+	`team_id` int not null comment '队伍id',
 	`score` int not null default 0 comment '主队进球',
 	`rent_amount` bigint not null comment '球队需承担的场租费用，单位分',
 	`shot` int not null default 0 comment '射门数',
@@ -264,6 +264,7 @@ drop table if exists player_stat_of_match;
 create table if not exists player_stat_of_match (
 	`id` bigint not null auto_increment comment 'ID',
 	`match_id` bigint not null comment '比赛id',
+	`team_id` int not null comment '队伍id',
 	`player_id` int not null comment '球员id',
 	`rent_amount` bigint not null comment '个人需承担的场租费用，单位分',
 	`temporary_player_rent_amount` bigint not null default 0 comment '携带的散兵需承担的场租费用，单位分',

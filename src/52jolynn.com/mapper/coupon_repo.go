@@ -128,7 +128,7 @@ func (c *couponDao) queryCoupon(query string, args ...interface{}) ([]model.Coup
 }
 
 func (c *couponDao) Insert(coupon *model.Coupon) (*model.Coupon, bool) {
-	stmt, err := c.db.Prepare(fmt.Sprintf("insert into %s (%s) values(?, ?, ?, ?, ?, ?, ?, ?)", TableNameOfCoupon, ColumnWithoutIdOfCoupon))
+	stmt, err := c.db.Prepare(fmt.Sprintf("insert into %s (%s) values(?, ?, ?, ?, ?, ?, ?, ?, ?)", TableNameOfCoupon, ColumnWithoutIdOfCoupon))
 	if err != nil {
 		log.Printf("预编译插入%s语句出错，err: %s\n", TableNameOfCoupon, err.Error())
 		return nil, false

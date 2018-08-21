@@ -186,6 +186,7 @@ type TeamStatOfMatch struct {
 type PlayerStatOfMatch struct {
 	Id                        int64  `json:"id"`
 	MatchId                   int64  `json:"match_id"`
+	TeamId                    int    `json:"team_id"`
 	PlayerId                  int    `json:"player_id"`
 	RentAmount                int64  `json:"rent_amount"`
 	TemporaryPlayerRentAmount int64  `json:"temporary_player_rent_amount"`
@@ -195,7 +196,7 @@ type PlayerStatOfMatch struct {
 	Foul                      int    `json:"foul"`
 	BreakThrough              int    `json:"break_through"`
 	Tackle                    int    `json:"tackle"`
-	RellowCard                int    `json:"yellow_card"`
+	YellowCard                int    `json:"yellow_card"`
 	RedCard                   int    `json:"red_card"`
 	CreateTime                string `json:"create_time"`
 	PlayerStatus              string `json:"player_status"` //到场状态, N: 到场, X: 未到场

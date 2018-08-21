@@ -20,8 +20,11 @@ type GameOfMatchDao interface {
 	InsertEnrollOfMatch(e *model.EnrollOfMatch) (*model.EnrollOfMatch, bool)
 	UpdateEnrollOfMatchStatus(id int64, status, oldStatus string) (int64, bool)
 
-	InsertTeamStatOfMatch(stat *model.TeamStatOfMatch) (*model.TeamStatOfMatch, bool)
+	InsertTeamStatOfMatch(teamStatOfMatch *model.TeamStatOfMatch) (*model.TeamStatOfMatch, bool)
 	QueryTeamStatOfMatch(matchId, teamId sql.NullInt64, ttype, startTime, endTime sql.NullString, limit, offset int) ([]model.TeamStatOfMatch, bool)
+
+	InsertPlayerStatOfMatch(playerStatOfMatch *model.PlayerStatOfMatch) (*model.PlayerStatOfMatch, bool)
+	QueryPlayerStatOfMatch(matchId, teamId, playerId sql.NullInt64, startTime, endTime sql.NullString, limit, offset int) ([]model.PlayerStatOfMatch, bool)
 }
 
 type gameOfMatchDao struct {
@@ -137,7 +140,7 @@ func (c *gameOfMatchDao) queryGameOfMatch(query string, args ...interface{}) ([]
 }
 
 func (c *gameOfMatchDao) Insert(gameOfMatch *model.GameOfMatch) (*model.GameOfMatch, bool) {
-	stmt, err := c.db.Prepare(fmt.Sprintf("insert into %s (%s) values(?, ?, ?, ?, ?, ?)", TableNameOfGameOfMatch, ColumnWithoutIdOfGameOfMatch))
+	stmt, err := c.db.Prepare(fmt.Sprintf("insert into %s (%s) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", TableNameOfGameOfMatch, ColumnWithoutIdOfGameOfMatch))
 	if err != nil {
 		log.Printf("预编译插入game_of_match语句出错，err: %s\n", err.Error())
 		return nil, false
@@ -316,14 +319,14 @@ const (
 	MatchTeamTypeAway              = "away"
 )
 
-func (c *gameOfMatchDao) InsertTeamStatOfMatch(stat *model.TeamStatOfMatch) (*model.TeamStatOfMatch, bool) {
-	stmt, err := c.db.Prepare(fmt.Sprintf("insert into %s (%s) values(?, ?, ?, ?, ?)", TableNameOfEnrollOfMatch, ColumnWithoutIdOfEnrollOfMatch))
+func (c *gameOfMatchDao) InsertTeamStatOfMatch(teamStatOfMatch *model.TeamStatOfMatch) (*model.TeamStatOfMatch, bool) {
+	stmt, err := c.db.Prepare(fmt.Sprintf("insert into %s (%s) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", TableNameOfTeamStatOfMatch, ColumnWithoutIdOfEnrollOfMatch))
 	if err != nil {
 		log.Printf("预编译插入%s语句出错，err: %s\n", TableNameOfTeamStatOfMatch, err.Error())
 		return nil, false
 	}
 	defer stmt.Close()
-	result, err := stmt.Exec(stat.MatchId, stat.Ttype, stat.TeamId, stat.Score, stat.RentAmount, stat.Shot, stat.Foul, stat.FreeKick, stat.PenaltyKick, stat.Offside, stat.Corner, &stat.Pass, stat.YellowCard, stat.RedCard, stat.CreateTime)
+	result, err := stmt.Exec(teamStatOfMatch.MatchId, teamStatOfMatch.Ttype, teamStatOfMatch.TeamId, teamStatOfMatch.Score, teamStatOfMatch.RentAmount, teamStatOfMatch.Shot, teamStatOfMatch.Foul, teamStatOfMatch.FreeKick, teamStatOfMatch.PenaltyKick, teamStatOfMatch.Offside, teamStatOfMatch.Corner, &teamStatOfMatch.Pass, teamStatOfMatch.YellowCard, teamStatOfMatch.RedCard, teamStatOfMatch.CreateTime)
 	if err != nil {
 		log.Printf("插入%s出错，err: %s\n", TableNameOfTeamStatOfMatch, err.Error())
 		return nil, false
@@ -333,8 +336,8 @@ func (c *gameOfMatchDao) InsertTeamStatOfMatch(stat *model.TeamStatOfMatch) (*mo
 		log.Printf("获取插入%s.id出错，err: %s\n", TableNameOfTeamStatOfMatch, err.Error())
 		return nil, false
 	}
-	stat.Id = lastInsertId
-	return stat, true
+	teamStatOfMatch.Id = lastInsertId
+	return teamStatOfMatch, true
 }
 
 func (c *gameOfMatchDao) QueryTeamStatOfMatch(matchId, teamId sql.NullInt64, ttype, startTime, endTime sql.NullString, limit, offset int) ([]model.TeamStatOfMatch, bool) {
@@ -345,7 +348,7 @@ func (c *gameOfMatchDao) QueryTeamStatOfMatch(matchId, teamId sql.NullInt64, tty
 
 func (c *gameOfMatchDao) queryTeamStatOfMatch(query string, args ...interface{}) ([]model.TeamStatOfMatch, bool) {
 	stmt, err := c.db.Prepare(query)
-	sqlMsg := fmt.Sprintf("%s.queryTeamOfMatch")
+	sqlMsg := fmt.Sprintf("%s.queryTeamOfMatch", TableNameOfTeamStatOfMatch)
 	if err != nil {
 		log.Printf("预编译%s语句出错，err: %s\n", sqlMsg, err.Error())
 		return nil, false
@@ -388,6 +391,96 @@ func buildQueryTeamStatOfMatchSql(returnColumn string, matchId, teamId sql.NullI
 	if ttype.Valid {
 		querySql.WriteString(" and type=?")
 		args = append(args, ttype)
+	}
+	if startTime.Valid {
+		querySql.WriteString(" and create_time>=?")
+		args = append(args, startTime)
+	}
+	if endTime.Valid {
+		querySql.WriteString(" and create_time<=?")
+		args = append(args, endTime)
+	}
+	return querySql.String(), args
+}
+
+const (
+	ColumnWithoutIdPlayerStatOfMatch = "`match_id`, `team_id`, `player_id`, `rent_amount`, `temporary_player_rent_amount`, `score`,  `shot`, `assists`, `foul`, `break_through`, `tackle`, `yellow_card`, `red_card`, `create_time`, `player_status`, `pay_by_sb`, `pay_player_id`"
+	ColumnPlayerStatOfMatch          = "`id`, " + ColumnWithoutIdPlayerStatOfMatch
+	TableNameOfPlayerStatOfMatch     = "player_stat_of_match"
+)
+
+func (c *gameOfMatchDao) InsertPlayerStatOfMatch(playerStatOfMatch *model.PlayerStatOfMatch) (*model.PlayerStatOfMatch, bool) {
+	stmt, err := c.db.Prepare(fmt.Sprintf("insert into %s (%s) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", TableNameOfPlayerStatOfMatch, ColumnWithoutIdOfPlayerOfTeam))
+	if err != nil {
+		log.Printf("预编译插入%s语句出错，err: %s\n", TableNameOfPlayerStatOfMatch, err.Error())
+		return nil, false
+	}
+	defer stmt.Close()
+	result, err := stmt.Exec(playerStatOfMatch.MatchId, playerStatOfMatch.TeamId, playerStatOfMatch.PlayerId, playerStatOfMatch.RentAmount, playerStatOfMatch.TemporaryPlayerRentAmount, playerStatOfMatch.Score, playerStatOfMatch.Shot, playerStatOfMatch.Assists, playerStatOfMatch.Foul, playerStatOfMatch.BreakThrough, playerStatOfMatch.Tackle, playerStatOfMatch.YellowCard, playerStatOfMatch.RedCard, playerStatOfMatch.CreateTime, playerStatOfMatch.PlayerStatus, playerStatOfMatch.PayBySb, playerStatOfMatch.PayPlayerId)
+	if err != nil {
+		log.Printf("插入%s出错，err: %s\n", TableNameOfPlayerStatOfMatch, err.Error())
+		return nil, false
+	}
+	lastInsertId, err := result.LastInsertId()
+	if err != nil {
+		log.Printf("获取插入%s.id出错，err: %s\n", TableNameOfPlayerStatOfMatch, err.Error())
+		return nil, false
+	}
+	playerStatOfMatch.Id = lastInsertId
+	return playerStatOfMatch, true
+}
+
+func (c *gameOfMatchDao) QueryPlayerStatOfMatch(matchId, teamId, playerId sql.NullInt64, startTime, endTime sql.NullString, limit, offset int) ([]model.PlayerStatOfMatch, bool) {
+	querySql, args := buildQueryPlayerStatOfMatchSql(ColumnPlayerStatOfMatch, matchId, teamId, playerId, startTime, endTime)
+	querySql += " order by create_time desc, id"
+	return c.queryPlayerStatOfMatch(querySql, args...)
+}
+
+func (c *gameOfMatchDao) queryPlayerStatOfMatch(query string, args ...interface{}) ([]model.PlayerStatOfMatch, bool) {
+	stmt, err := c.db.Prepare(query)
+	sqlMsg := fmt.Sprintf("%s.queryTeamOfMatch", TableNameOfPlayerStatOfMatch)
+	if err != nil {
+		log.Printf("预编译%s语句出错，err: %s\n", sqlMsg, err.Error())
+		return nil, false
+	}
+	defer stmt.Close()
+	rows, err := stmt.Query(args...)
+	if err != nil {
+		log.Printf("%s查询出错，err: %s\n", sqlMsg, err.Error())
+		return nil, false
+	}
+
+	playerStatOfMatchs := make([]model.PlayerStatOfMatch, 0)
+	for rows.Next() {
+		playerStatOfMatch := model.PlayerStatOfMatch{}
+		err = rows.Scan(&playerStatOfMatch.Id, &playerStatOfMatch.MatchId, &playerStatOfMatch.TeamId, &playerStatOfMatch.PlayerId, &playerStatOfMatch.RentAmount, &playerStatOfMatch.TemporaryPlayerRentAmount, &playerStatOfMatch.Score, &playerStatOfMatch.Shot, &playerStatOfMatch.Assists, &playerStatOfMatch.Foul, &playerStatOfMatch.BreakThrough, &playerStatOfMatch.Tackle, &playerStatOfMatch.YellowCard, &playerStatOfMatch.RedCard, &playerStatOfMatch.CreateTime, &playerStatOfMatch.PlayerStatus, &playerStatOfMatch.PayBySb, &playerStatOfMatch.PayPlayerId)
+		if err != nil {
+			log.Printf("%s获取数据出错，err: %s\n", sqlMsg, err.Error())
+			return nil, false
+		}
+		playerStatOfMatchs = append(playerStatOfMatchs, playerStatOfMatch)
+	}
+
+	return playerStatOfMatchs, true
+}
+
+func buildQueryPlayerStatOfMatchSql(returnColumn string, matchId, teamId, playerId sql.NullInt64, startTime, endTime sql.NullString) (string, []interface{}) {
+	querySql := strings.Builder{}
+	querySql.WriteString(fmt.Sprintf("select %s from %s where 1=1", returnColumn, TableNameOfPlayerStatOfMatch))
+	var args []interface{}
+	querySql.WriteString(" and match_id=?")
+	args = append(args, matchId)
+	if matchId.Valid {
+		querySql.WriteString(" and match_id=?")
+		args = append(args, matchId)
+	}
+	if teamId.Valid {
+		querySql.WriteString(" and team_id=?")
+		args = append(args, teamId)
+	}
+	if playerId.Valid {
+		querySql.WriteString(" and player_id=?")
+		args = append(args, playerId)
 	}
 	if startTime.Valid {
 		querySql.WriteString(" and create_time>=?")

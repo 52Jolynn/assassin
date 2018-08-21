@@ -138,7 +138,7 @@ func (c *playerDao) queryPlayer(query string, args ...interface{}) ([]model.Play
 }
 
 func (c *playerDao) Insert(player *model.Player) (*model.Player, bool) {
-	stmt, err := c.db.Prepare(fmt.Sprintf("insert into %s (%s) values(?, ?, ?, ?, ?, ?, ?, ?)", TableNameOfPlayer, ColumnWithoutIdOfPlayer))
+	stmt, err := c.db.Prepare(fmt.Sprintf("insert into %s (%s) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", TableNameOfPlayer, ColumnWithoutIdOfPlayer))
 	if err != nil {
 		log.Printf("预编译插入player语句出错，err: %s", err.Error())
 		return nil, false
