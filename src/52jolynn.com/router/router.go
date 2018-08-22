@@ -7,14 +7,23 @@ import (
 	"52jolynn.com/misc"
 	"github.com/gin-gonic/gin"
 	"fmt"
+	"github.com/gorilla/sessions"
+	"net/http"
 )
 
 var mapi api.Mapi
 var uapi api.Uapi
 
+var session = sessions.NewSession(sessions.NewCookieStore([]byte("assassin-secret")), "gin-session")
+
+const (
+	SessionUid = "uid"
+)
+
 func RegisterRoutes(ctx core.Context, router *gin.Engine) {
 	mapi = api.NewMapi(ctx)
 	uapi = api.NewUapi(ctx)
+
 	router.GET("/index", func(ctx *gin.Context) {
 		ctx.Writer.WriteString(fmt.Sprintf("Hello assassin, today is %s", time.Now().Format(misc.StandardTimeFormatPattern)))
 	})
@@ -22,13 +31,25 @@ func RegisterRoutes(ctx core.Context, router *gin.Engine) {
 	v1 := router.Group("/v1")
 	//用户
 	{
-		v1.POST("/user/register", register)
+		v1.POST("/user/sign_up", signUp)
+		v1.POST("/user/sign_in", signIn)
+		v1.POST("/user/sign_with_wx", signWithWeiXin)
 	}
 
 	authV1 := router.Group("/v1")
 	authV1.Use(func(ctx *gin.Context) {
-
+		if _, exists := session.Values[SessionUid]; !exists {
+			ctx.JSON(http.StatusOK, core.CreateResponse(misc.CodeUserDoesNotSignIn))
+			ctx.Abort()
+			return
+		}
+		ctx.Next()
 	})
+	//用户
+	{
+		authV1.POST("/user/sign_out", signOut)
+		authV1.POST("/user/bind_wx", bindWeiXin)
+	}
 	//俱乐部
 	{
 		authV1.GET("/club/:id", getClub)

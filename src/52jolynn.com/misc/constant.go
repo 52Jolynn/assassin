@@ -5,13 +5,14 @@ const (
 )
 
 const (
-	CodeSuccess          = 1001
-	CodeFailure          = 1002
-	CodeParamMissing     = 1003
-	CodeParamInvalid     = 1004
-	CodeDuplicateData    = 1005
-	CodeDataDoesNotExist = 1006
-	CodeTryAgainLater    = 0
+	CodeSuccess           = 1001
+	CodeFailure           = 1002
+	CodeParamMissing      = 1003
+	CodeParamInvalid      = 1004
+	CodeDuplicateData     = 1005
+	CodeDataDoesNotExist  = 1006
+	CodeUserDoesNotSignIn = 2001
+	CodeTryAgainLater     = 0
 )
 
 var ResponseCode = map[int]string{
@@ -22,4 +23,6 @@ var ResponseCode = map[int]string{
 	CodeDuplicateData:    "%s已存在",
 	CodeDataDoesNotExist: "%s不存在",
 	CodeTryAgainLater:    "系统繁忙，请稍候再试",
+
+	CodeUserDoesNotSignIn: "用户未登录",
 }
