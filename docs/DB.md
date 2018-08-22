@@ -75,6 +75,21 @@ create table if not exists ground_rental_record (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='俱乐部场地租用记录表';
 
 
+## 用户表
+drop table if exists user;
+create table if not exists user (
+	`id` bigint not null auto_increment comment 'ID',
+	`mobile` varchar(16) not null comment '用户手机',
+	`passwd` varchar(128) null comment '描述',
+	`wx_open_id` varchar(128) null comment '微信open_id',
+	`nickname` varchar(32) null comment '昵称',
+	`create_time` datetime(3) not null comment '创建时间',
+	`last_active_time` datetime(3) null comment '最后登录时间',
+	`status` varchar(4) not null comment '状态, N: 正常, D: 禁用',
+	primary key(`id`),
+	unique key n(`mobile`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='球队表';
+
 ## 球队表
 drop table if exists team;
 create table if not exists team (
@@ -83,8 +98,7 @@ create table if not exists team (
 	`remark` varchar(128) null comment '描述',
 	`captain_name` varchar(16) null comment '队长名称',
 	`captain_mobile` varchar(16) null comment '队长联系电话',
-	`manager_username` varchar(16) null comment '管理员用户名',
-	`manager_passwd` varchar(128) null comment '管理员密码',
+	`manager_uid` bigint null comment '管理员用户id',
 	`create_time` datetime(3) not null comment '创建时间',
 	`status` varchar(4) not null comment '状态, N: 正常, D: 禁用',
 	primary key(`id`),
@@ -126,9 +140,7 @@ create table if not exists coupon (
 drop table if exists player;
 create table if not exists player (
 	`id` int not null auto_increment comment 'ID',
-	`username` varchar(16) null comment '用户名',
-	`passwd` varchar(128) null comment '密码',
-	`wx_open_id` varchar(128) null comment '微信openid',
+	`uid` bigint null comment '用户id',
 	`name` varchar(32) not null comment '球员名称',
 	`remark` varchar(128) null comment '描述',
 	`mobile` varchar(16) null comment '联系电话',
@@ -148,8 +160,7 @@ create table if not exists player (
 	`status` varchar(4) not null comment '状态, N: 正常, E: 退出, D: 禁用',
 	`level` varchar(4) not null comment 'N: 普通队员(只能查看个人相关数据), S: 正式队员(可查看球队相关数据)', 
 	primary key(`id`),
-	key u(`username`),
-	key name(`name`)
+	key u(`uid`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='球员表';
 
 ## 球员数值评估表(自评+他评)

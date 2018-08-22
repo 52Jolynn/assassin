@@ -32,7 +32,7 @@ func NewTeamDao(db *sql.DB) TeamDao {
 }
 
 const (
-	ColumnWithoutIdOfTeam = "`name`, `remark`, `captain_name`, `captain_mobile`, `manager_username`, `manager_passwd`, `create_time`, `status`"
+	ColumnWithoutIdOfTeam = "`name`, `remark`, `captain_name`, `captain_mobile`, `manager_uid`, `create_time`, `status`"
 	ColumnOfTeam          = "`id`, " + ColumnWithoutIdOfTeam
 	TableNameOfTeam       = "team"
 )
@@ -116,7 +116,7 @@ func (c *teamDao) queryTeam(query string, args ...interface{}) ([]model.Team, bo
 	teams := make([]model.Team, 0)
 	for rows.Next() {
 		team := model.Team{}
-		err = rows.Scan(&team.Id, &team.Name, &team.Remark, &team.CaptainName, &team.CaptainMobile, &team.ManagerUsername, &team.ManagerPasswd, &team.CreateTime, &team.Status)
+		err = rows.Scan(&team.Id, &team.Name, &team.Remark, &team.CaptainName, &team.CaptainMobile, &team.ManagerUid, &team.CreateTime, &team.Status)
 		if err != nil {
 			log.Printf("teamDao.queryTeam获取数据出错，err: %s", err.Error())
 			return nil, false
@@ -128,13 +128,13 @@ func (c *teamDao) queryTeam(query string, args ...interface{}) ([]model.Team, bo
 }
 
 func (c *teamDao) Insert(team *model.Team) (*model.Team, bool) {
-	stmt, err := c.db.Prepare(fmt.Sprintf("insert into %s (%s) values(?, ?, ?, ?, ?, ?, ?, ?)", TableNameOfTeam, ColumnWithoutIdOfTeam))
+	stmt, err := c.db.Prepare(fmt.Sprintf("insert into %s (%s) values(?, ?, ?, ?, ?, ?, ?)", TableNameOfTeam, ColumnWithoutIdOfTeam))
 	if err != nil {
 		log.Printf("预编译插入team语句出错，err: %s", err.Error())
 		return nil, false
 	}
 	defer stmt.Close()
-	result, err := stmt.Exec(team.Name, team.Remark, team.CaptainName, team.CaptainMobile, team.ManagerUsername, team.ManagerPasswd, team.CreateTime, team.Status)
+	result, err := stmt.Exec(team.Name, team.Remark, team.CaptainName, team.CaptainMobile, team.ManagerUid, team.CreateTime, team.Status)
 	if err != nil {
 		log.Printf("插入team出错，err: %s", err.Error())
 		return nil, false
@@ -149,13 +149,13 @@ func (c *teamDao) Insert(team *model.Team) (*model.Team, bool) {
 }
 
 func (c *teamDao) Update(team *model.Team) (int64, bool) {
-	stmt, err := c.db.Prepare(fmt.Sprintf("update `%s` set `name`=?, `remark`=?, `captain_name`=?, `captain_mobile`=?, `manager_username`=?, `manager_passwd`=?, `create_time`=?, `status`=? where id=?", TableNameOfTeam))
+	stmt, err := c.db.Prepare(fmt.Sprintf("update `%s` set `name`=?, `remark`=?, `captain_name`=?, `captain_mobile`=?, `manager_uid`=?, `create_time`=?, `status`=? where id=?", TableNameOfTeam))
 	if err != nil {
 		log.Printf("预编译更新team语句出错，err: %s", err.Error())
 		return 0, false
 	}
 	defer stmt.Close()
-	result, err := stmt.Exec(team.Name, team.Remark, team.CaptainName, team.CaptainMobile, team.ManagerUsername, team.ManagerPasswd, team.CreateTime, team.Status, team.Id)
+	result, err := stmt.Exec(team.Name, team.Remark, team.CaptainName, team.CaptainMobile, team.ManagerUid, team.CreateTime, team.Status, team.Id)
 	if err != nil {
 		log.Printf("更新team出错，err: %s", err.Error())
 		return 0, false

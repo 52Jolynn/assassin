@@ -35,17 +35,28 @@ type GroundRental struct {
 	Status      string `json:"status"` //状态, N: 正常, L: 锁定, R:已出租
 }
 
+//用户表
+type User struct {
+	Id             int64  `json:"id"`
+	Mobile         string `json:"mobile"`
+	Passwd         string `json:"passwd"`
+	WxOpenId       string `json:"wx_open_id"`
+	NickName       string `json:"nick_name"`
+	CreateTime     string `json:"create_time"`
+	LastActiveTime string `json:"last_active_time"`
+	Status         string `json:"status"`
+}
+
 //球队表
 type Team struct {
-	Id              int     `json:"id"`
-	Name            string  `json:"name"`
-	Remark          *string `json:"remark"`
-	CaptainName     *string `json:"captain_name"`
-	CaptainMobile   *string `json:"captain_mobile"`
-	ManagerUsername *string `json:"manager_username"`
-	ManagerPasswd   *string `json:"manager_passwd"`
-	CreateTime      string  `json:"create_time"`
-	Status          string  `json:"status"` //状态, N: 正常, D: 禁用
+	Id            int     `json:"id"`
+	Name          string  `json:"name"`
+	Remark        *string `json:"remark"`
+	CaptainName   *string `json:"captain_name"`
+	CaptainMobile *string `json:"captain_mobile"`
+	ManagerUid    *int64  `json:"manager_uid"`
+	CreateTime    string  `json:"create_time"`
+	Status        string  `json:"status"` //状态, N: 正常, D: 禁用
 }
 
 //球队与俱乐部表
@@ -86,9 +97,7 @@ type Coupon struct {
 //球员表
 type Player struct {
 	Id          int     `json:"id"`
-	Username    *string `json:"username"`
-	Passwd      *string `json:"passwd"`
-	WxOpenId    *string `json:"wx_open_id"`
+	Uid         int64   `json:"uid"`
 	Name        string  `json:"name"`
 	Remark      *string `json:"remark"`
 	Mobile      *string `json:"mobile"`

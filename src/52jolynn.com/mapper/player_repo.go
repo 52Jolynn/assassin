@@ -26,7 +26,7 @@ func NewPlayerDao(db *sql.DB) PlayerDao {
 }
 
 const (
-	ColumnWithoutIdOfPlayer = "`username`, `passwd`, `wx_open_id`, `name`, `remark`, `mobile`, `pos`, `height`, `age`, `pass_val`, `shot_val`, `strength_val`, `dribble_val`, `speed_val`, `tackle_val`, `head_val`, `throwing_val`, `reaction_val`, `create_time`, `status`, `level`"
+	ColumnWithoutIdOfPlayer = "`uid`, `name`, `remark`, `mobile`, `pos`, `height`, `age`, `pass_val`, `shot_val`, `strength_val`, `dribble_val`, `speed_val`, `tackle_val`, `head_val`, `throwing_val`, `reaction_val`, `create_time`, `status`, `level`"
 	ColumnOfPlayer          = "`id`, " + ColumnWithoutIdOfPlayer
 	TableNameOfPlayer       = "player"
 )
@@ -126,7 +126,7 @@ func (c *playerDao) queryPlayer(query string, args ...interface{}) ([]model.Play
 	players := make([]model.Player, 0)
 	for rows.Next() {
 		player := model.Player{}
-		err = rows.Scan(&player.Id, &player.Username, &player.Passwd, &player.WxOpenId, &player.Name, &player.Remark, &player.Mobile, &player.Pos, &player.Height, &player.Age, &player.PassVal, &player.ShotVal, &player.StrengthVal, &player.DribbleVal, &player.SpeedVal, &player.TackleVal, &player.HeadVal, &player.ThrowingVal, &player.ReactionVal, &player.CreateTime, &player.Status, &player.Level)
+		err = rows.Scan(&player.Id, &player.Uid, &player.Name, &player.Remark, &player.Mobile, &player.Pos, &player.Height, &player.Age, &player.PassVal, &player.ShotVal, &player.StrengthVal, &player.DribbleVal, &player.SpeedVal, &player.TackleVal, &player.HeadVal, &player.ThrowingVal, &player.ReactionVal, &player.CreateTime, &player.Status, &player.Level)
 		if err != nil {
 			log.Printf("playerDao.queryPlayer获取数据出错，err: %s", err.Error())
 			return nil, false
@@ -144,7 +144,7 @@ func (c *playerDao) Insert(player *model.Player) (*model.Player, bool) {
 		return nil, false
 	}
 	defer stmt.Close()
-	result, err := stmt.Exec(player.Username, player.Passwd, player.WxOpenId, player.Name, player.Remark, player.Mobile, player.Pos, player.Height, player.Age, player.PassVal, player.ShotVal, player.StrengthVal, player.DribbleVal, player.SpeedVal, player.TackleVal, player.HeadVal, player.ThrowingVal, player.ReactionVal, player.CreateTime, player.Status, player.Level)
+	result, err := stmt.Exec(player.Uid, player.Name, player.Remark, player.Mobile, player.Pos, player.Height, player.Age, player.PassVal, player.ShotVal, player.StrengthVal, player.DribbleVal, player.SpeedVal, player.TackleVal, player.HeadVal, player.ThrowingVal, player.ReactionVal, player.CreateTime, player.Status, player.Level)
 	if err != nil {
 		log.Printf("插入player出错，err: %s", err.Error())
 		return nil, false
